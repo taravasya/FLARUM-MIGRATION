@@ -1,4 +1,10 @@
-# vBulletin to Flarum
+# vBulletin 4 to Flarum
+
+!!!!Project is copy and edit from here:   
+https://github.com/glewe/vbulletin-to-flarum
+
+!!!Its not ready to use!!!
+
 Script to migrate a vBulletin board to a Flarum board
 
 Based on a phpBB migration script by robrotheram from discuss.flarum.org
