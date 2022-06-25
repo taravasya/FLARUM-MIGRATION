@@ -22,12 +22,7 @@ include_once 'functions.php';
 // TEXT FORMATTER SETTINGS
 include __DIR__ . '/../../vendor/autoload.php';
 include_once 'flarumbundle.php'; //!!! here custom bundle for parsing vb posts content @taravasya
-
 $parser = FlarumBundle::getParser();
-$parser->disableTag('SPOILER');
-$parser->disableTag('QUOTE');
-$parser->disablePlugin('Emoji');
-$parser->disablePlugin('Emoticons');
 
 //-----------------------------------------------------------------------------
 //
