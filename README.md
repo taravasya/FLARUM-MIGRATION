@@ -18,9 +18,15 @@ Discussion: https://discuss.flarum.org/d/25961-vbulletin-to-flarum-migration-scr
 ## Requirements and Conditions
 * The current script only supports vBulletin 4.2.
 * The script assumes that both databases, vBulletin and Flarum, are on the same database server.
-* In Flarum need to be already installed and enabled plugin [Old Passwords](https://github.com/migratetoflarum/old-passwords.git), which add in table USERS a column **migratetoflarum_old_password** used in this script for import users with their vb password
+* In Flarum needs to be already installed and enabled plugins:
+   * [Old Passwords](https://github.com/migratetoflarum/old-passwords.git), which add in table USERS a column **migratetoflarum_old_password** used in this script for import users with their vb password
+   * [FoF Upload](https://github.com/FriendsOfFlarum/upload.git)
+   * [FoF Formatting](https://github.com/FriendsOfFlarum/formatting.git)
+   * [FoF BBCode Details](https://github.com/FriendsOfFlarum/bbcode-details.git)
+   * [BBCode Hide Content](https://github.com/datlechin/flarum-bbcode-hide-content.git)
+* Configure your bundle for [s9e/TextFormatter](https://s9etextformatter.readthedocs.io/Bundles/Your_own_bundle/) by editing configurator.php as discribed at this link and replace flarumbundle.php with your OR just use it as is. 
 
-## What the script does
+## What the script import.php does
 ### Step 1: Group Migration
 It will create all non-default vBulletin groups in Flarum. The first seven vBulletin groups will be skipped since they can be matched to one of the four default Flarum groups:
 
@@ -81,11 +87,15 @@ Post fields:
 * type
 * content
 
-The posts content will be parsed with s9e/TextFormatter integrated in Flarum. But some bbcodes will be prepaided with custom code, what finished text will be the most acceptable  
+The posts content will be parsed with s9e/TextFormatter integrated in Flarum. But some bbcodes will be prepaided with custom code, what finished text will be the most acceptable
+Inline image attachments [ATTACH]XXXID[/ATTACH] will be replaced with the <UPL-IMAGE-PREVIEW></UPL-IMAGE-PREVIEW> tags.
 The posts will then be linked to the appropriate discussions.
 
 ### Step 5: User/Discussions record creation
 It will link discussions with users that have contributed to them.
+
+### Step 6: Avatars import to db
+It will place to flarum table **users** paths to avatars
 
 ### Step 6: User discussion and comment count creation
 It will count discussions and comments for each user and save them accordingly.
@@ -117,8 +127,10 @@ flarum
 ```
 7. Run attachments.php
 8. Run avatars.php
-9. Run smiles.php
+9. Run smiles.php 
 10. Run import.php. It will output information to the console telling you what is going on and some errors what occurred.
+
+(Point 7-9 will save BLOBs from vBulletin DB to file system to the folders what must be created at point 5. It is recommended to check the integrity of saved files) 
 
 ### Starting a new attempt
 If something went wrong and you want to start over:

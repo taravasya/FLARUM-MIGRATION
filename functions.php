@@ -1,5 +1,4 @@
 <?php
-
 //=============================================================================
 // FUNCTIONS
 
@@ -155,61 +154,65 @@ function formatText($connection, $text, $discussionid, $postnumber, $postid) {
    global $mentionsArray;
    global $quotesArray;
    global $postsNumbersArray;   
+   global $_convertCustomBBCodesToXML;   
+   global $_convertCustomSmiliesToXML;
+   global $_convertInternalURLs;
 
    $text = html_entity_decode($text);
+   if ($_convertInternalURLs) {
+	   //replace direct urls to profiles
+	   $text = preg_replace('#https?:\/\/wedframe\.ru\/member\.php\?u=(\d+)#', '/u/$1', $text);
 
-   //replace direct urls to profiles
-   $text = preg_replace('#https?:\/\/wedframe\.ru\/member\.php\?u=(\d+)#', '/u/$1', $text);
-
-   //replace urls to posts between tags [url]URL[/url]
-   $text = preg_replace_callback(
-      '#\[url](https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)(&page=\d+)?&p=(\d+).*post\d+)\[\/url]#i',
-      function ($m) use ($postsNumbersArray) {
-         $postnumber = isset($postsNumbersArray[$m[5]]) ? $postsNumbersArray[$m[5]] : null;
-         return isset($postnumber) ? '[URL="/d/'.$m[3].'/'.$postnumber.'&pid'.$m[5].'"]Пост № '.$m[5].'[/URL]' : '[URL="/d/'.$m[3].'"]#Пост не найден#[/URL]';
-      },
-      $text
-   );
+	   //replace urls to posts between tags [url]URL[/url]
+	   $text = preg_replace_callback(
+	      '#\[url](https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)(&page=\d+)?&p=(\d+).*post\d+)\[\/url]#i',
+	      function ($m) use ($postsNumbersArray) {
+	         $postnumber = isset($postsNumbersArray[$m[5]]) ? $postsNumbersArray[$m[5]] : null;
+	         return isset($postnumber) ? '[URL="/d/'.$m[3].'/'.$postnumber.'&pid'.$m[5].'"]Пост № '.$m[5].'[/URL]' : '[URL="/d/'.$m[3].'"]'.$GLOBALS['post_not_found'].'[/URL]';
+	      },
+	      $text
+	   );
 
 
-   //replace urls to posts inside tags [url="URL"]
-   $text = preg_replace_callback(
-      '#\[URL="?https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)(&page=\d+)?&p=(\d+).*post\d+"?]#i',
-      function ($m) use ($postsNumbersArray) {
-         $postnumber = isset($postsNumbersArray[$m[4]]) ? $postsNumbersArray[$m[4]] : null;
-         return isset($postnumber) ? '[URL="/d/'.$m[2].'/'.$postnumber.'&pid'.$m[4].'"]' : '[URL="/d/'.$m[2].'"]';
-      },
-      $text
-   );
+	   //replace urls to posts inside tags [url="URL"]
+	   $text = preg_replace_callback(
+	      '#\[URL="?https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)(&page=\d+)?&p=(\d+).*post\d+"?]#i',
+	      function ($m) use ($postsNumbersArray) {
+	         $postnumber = isset($postsNumbersArray[$m[4]]) ? $postsNumbersArray[$m[4]] : null;
+	         return isset($postnumber) ? '[URL="/d/'.$m[2].'/'.$postnumber.'&pid'.$m[4].'"]' : '[URL="/d/'.$m[2].'"]';
+	      },
+	      $text
+	   );
 
-   //replace urls to threads between tags [url]URL[/url]
-   $text = preg_replace('#\[URL]https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)\[\/URL]#i', '[URL="/d/$2"]Тема №$2[/URL]', $text);
+	   //replace urls to threads between tags [url]URL[/url]
+	   $text = preg_replace('#\[URL]https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)\[\/URL]#i', '[URL="/d/$2"]'.$GLOBALS['is_thread'].' №$2[/URL]', $text);
 
-   //replace urls to threads inside tag [url="URL"]
-   $text = preg_replace('#\[URL="?https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)"?]#i', '[URL="/d/$2"]', $text);
+	   //replace urls to threads inside tag [url="URL"]
+	   $text = preg_replace('#\[URL="?https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)"?]#i', '[URL="/d/$2"]', $text);
 
-   //replace text urls to posts between tags [url=url]URL[/url]
-   $text = preg_replace_callback(
-      '#https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)(&page=\d+)?&p=(\d+).*post\d+#i',
-      function ($m) use ($postsNumbersArray) {
-         return isset($postsNumbersArray[$m[4]]) ? 'Пост №'.$m[4] : '#Пост не найден#';
-      },
-      $text
-   );
+	   //replace text urls to posts between tags [url=url]URL[/url]
+	   $text = preg_replace_callback(
+	      '#https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)(&page=\d+)?&p=(\d+).*post\d+#i',
+	      function ($m) use ($postsNumbersArray) {
+	         return isset($postsNumbersArray[$m[4]]) ? $GLOBALS['is_post'].' №'.$m[4] : $GLOBALS['post_not_found'];
+	      },
+	      $text
+	   );
 
-   //replace text urls to threads between tags [url=url]URL[/url]
-   $text = preg_replace('#https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)#i', 'Тема №$2', $text);
+	   //replace text urls to threads between tags [url=url]URL[/url]
+	   $text = preg_replace('#https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)#i', $GLOBALS['is_thread'].' №$2', $text);
 
+   }
    //clear whitespaces what placed next to square brackets between tags: [code] <<<MY TEXT[/code] (due to a typo or negligence). 
    $text = preg_replace('#(\[\S+])([[:blank:]]+?)(.+)([[:blank:]]+)?(\[\/\S+])#U', '$1$3$5', $text);
 
    $text = textFormatterParse($text);
    //echo(PHP_EOL.'[#####FORMAT] : '.$text.PHP_EOL);
 
-   $text = convertCustomBBCodesToXML($text, $discussionid, $postnumber, $postid);
+   if ($_convertCustomBBCodesToXML) $text = convertCustomBBCodesToXML($text, $discussionid, $postnumber, $postid);
    //echo(PHP_EOL.'[#####CUSTOM] : '.$text.PHP_EOL); 
 
-   $text = convertCustomSmiliesToXML($text);
+   if ($_convertCustomSmiliesToXML) $text = convertCustomSmiliesToXML($text);
 
    return $connection->real_escape_string($text);
    
@@ -268,7 +271,7 @@ function convertCustomBBCodesToXML($bbcode, $discussionid, $postnumber, $postid)
    }, $bbcode);
    $bbcode = preg_replace('#\[SPOILER](.*?)\[\/SPOILER]#is', '<DETAILS title="ПОДРОБНЕЕ +++"><s>[details="ПОДРОБНЕЕ +++"]</s><p>$1</p><e>[/details]</e></DETAILS>', $bbcode);
    $bbcode = preg_replace('#\[SPOILER=(.*?)](.*?)\[\/SPOILER]#is', '<DETAILS title="$1"><s>[details="$1"]</s><p>$2</p><e>[/details]</e></DETAILS>', $bbcode);
-   $bbcode = preg_replace('#\[(HIDE(.*?)|SHOWTOGROUPS(.*?))]((.)*?)\[(\/HIDE(.*?)|\/SHOWTOGROUPS(.*?))]#is', '<p>[REPLY]$4[/REPLY]</p>', $bbcode);
+   $bbcode = preg_replace('#\[(HIDE(.*?)|SHOWTOGROUPS(.*?))]((.)*?)\[(\/HIDE(.*?)|\/SHOWTOGROUPS(.*?))]#is', '<p>[LOGIN]$4[/LOGIN]</p>', $bbcode);
    $bbcode = preg_replace_callback(
       '#\[MENTION=(\d+)](.+?)\[\/MENTION]#is',
       function($m) use (&$mentionsArray, $postid) {

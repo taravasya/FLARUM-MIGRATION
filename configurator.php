@@ -18,5 +18,5 @@ $configurator->MediaEmbed->add('telegram');
 $configurator->BBCodes->addFromRepository('HR');
 
 // Save it back as your own
-$configurator->saveBundle('MyBundle', '/flarum_bundle.php');
+$configurator->saveBundle('FlarumBundle', '/flarumbundle.php');
 ?>

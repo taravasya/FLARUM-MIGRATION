@@ -1,9 +1,4 @@
 <?php
-set_time_limit(0);
-ini_set('memory_limit', -1);
-ini_set("log_errors", 1);
-ini_set("error_log", "vBulletin_to_Flarum_error.log");
-
 //-----------------------------------------------------------------------------
 // vBulletin and Flarum database information (must be same database server)
 // Update the following settings to reflect your environment
@@ -16,12 +11,16 @@ $vbulletinDbPrefix  = "";   // Your vBulletin database table prefix
 $flarumDbName       = "flarum_db";   // Your Flarum database name
 $flarumDbPrefix     = "flrm_";   // Your Flarum database table prefix
 
-include __DIR__ . '/../../vendor/autoload.php';
-include_once 'flarumbundle.php'; //!!! here custom bundle for parsing vb posts content @taravasya
+//Parse some custom bbcodes or smiles? Enable or dissable it if don't needed
+$_convertCustomBBCodesToXML = true;
+$_convertCustomSmiliesToXML = true;
+$_convertInternalURLs = true;
+// Set limits for testing purposes 
+$threads_limit  = 500000; // Limit threads in results to not run through all posts in db
+$threads_limit_ids = [false, 2, 5, 10]; // set to true first value and fill the list the ids of only those threads that will be included in the import. Other threads will be ignored.
 
-$parser = FlarumBundle::getParser();
-$parser->disableTag('SPOILER');
-$parser->disableTag('QUOTE');
-$parser->disablePlugin('Emoji');
-$parser->disablePlugin('Emoticons');
+//Some locales used in function "formatText" for convert internal URLs
+$GLOBALS['post_not_found'] = '#Пост не найден#';
+$GLOBALS['is_thread'] = 'Тема';
+$GLOBALS['is_post'] = 'Пост';
 ?>
