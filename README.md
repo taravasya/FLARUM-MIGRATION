@@ -16,9 +16,9 @@ License:    MIT
 Discussion: https://discuss.flarum.org/d/25961-vbulletin-to-flarum-migration-script
 
 ## Requirements and Conditions
-The current script only supports vBulletin 3.8.x.
-
-The script assumes that both databases, vBulletin and Flarum, are on the same database server.
+* The current script only supports vBulletin 4.2.
+* The script assumes that both databases, vBulletin and Flarum, are on the same database server.
+* In Flarum need to be already installed and enabled plugin [Old Passwords](https://github.com/migratetoflarum/old-passwords.git), which add in table USERS a column **migratetoflarum_old_password** used in this script for import users with their vb password
 
 ## What the script does
 ### Step 1: Group Migration
@@ -41,8 +41,7 @@ It will create all vBulletin users in Flarum with fields
 * is_email_confirmed = 1
 * joined_at
 * last_seen_at
-
-The passwords will NOT be copied. Instead it will create a random passowrd which is a md5 hash of the current time that is then shad1. This means after the migration all users will need to reset their passwords.
+* migratetoflarum_old_password = serialized data for Flarum **Old Passwords** plugin
 
 It will then create the group_user tabel entries with the appropriate group IDs from step 1.
 
@@ -82,6 +81,7 @@ Post fields:
 * type
 * content
 
+The posts content will be parsed with s9e/TextFormatter integrated in Flarum. But some bbcodes will be prepaided with custom code, what finished text will be the most acceptable  
 The posts will then be linked to the appropriate discussions.
 
 ### Step 5: User/Discussions record creation
@@ -94,8 +94,7 @@ It will count discussions and comments for each user and save them accordingly.
 It will sort the tags created in step 3 in alphabetical order (since there is no feature yet in Flarum to configure their display order).
 
 ## What the script does not do
-* The script will not copy/maintain the vBulletin passwords. Instead it will create a new random passowrd which is a md5 hash of the current time that is then shad1. This means after the migration all users will need to reset their passwords.
-* The script will not perform a thorough conversion of code used in the vBulletin posts and names. Some might not look the same in Flarum but I found it close enough.
+
 
 ## Instructions
 
@@ -103,8 +102,23 @@ It will sort the tags created in step 3 in alphabetical order (since there is no
 2. Create a local copy of your vBulletin board database (export from production).
 3. Install a fresh Flarum forum using the same database server.
 4. Export the fresh Flarum database into a file with option "Drop if exists" and disabled foreign key check (for later re-import if you want to run the migration again with your own customizations).
-5. Edit my script and change the database settings to your local environment.
-6. Run the script. It will output information to the console telling you what is going on and what errors occurred.
+5. Edit config.php and change the database settings to your local environment.
+6. Place all .php files from this repo to folder **import** in site root, and create all other this folders:
+```
+flarum
+└───public
+	└──import
+	|  └─[here all files from this repo]
+	└──assets
+	   └──avatars
+	   └──smiles
+	   └──files
+	      └──vbattachments 
+```
+7. Run attachments.php
+8. Run avatars.php
+9. Run smiles.php
+10. Run import.php. It will output information to the console telling you what is going on and some errors what occurred.
 
 ### Starting a new attempt
 If something went wrong and you want to start over:

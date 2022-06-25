@@ -3,11 +3,8 @@
 // vBulletin database information
 // Update the following settings to reflect your environment
 //
-$servername         = "localhost";   // Your database server
-$username           = "root_taravasya";   // Your database server username
-$password           = "6978321";   // Your database server password
-$vbulletinDbName    = "wedframe_db";   // Your vBulletin database name
-$vbulletinDbPrefix  = "";   // Your vBulletin database table prefix
+include_once 'config.php';
+include_once 'functions.php';
 
 $vbulletinDbConnection = new mysqli($servername, $username, $password, $vbulletinDbName);
 
@@ -41,34 +38,5 @@ while ($row = $result->fetch_assoc()) {
    $fd = fopen($fp.$fn, 'wb');
    $message = saveBLOB($fp, $fn, $row["filedata"]) ? '[v] saved: '.$fn : '[!] error'.$fn;
    consoleOut($message);
-}
-
-function saveBLOB($filepath, $filename, $content)
-{
-  $File = $filepath.$filename;
-  if ($Handle = fopen($File, 'w')) {
-    $info = $content;
-    if (fwrite($Handle, $info)) {
-      return true;
-    }
-    fclose($Handle);
-  }
-  return false;
-}
-
-function consoleOut($consoleText, $timeStamp=true) {
-
-   $time_stamp = Date('Y-m-d H:i:s');
-   $startStr = "\n";
-
-   if ($timeStamp) {
-      
-      $startStr .= $time_stamp.": ";
-
-   }
-   $endStr = "";
-   
-   echo $startStr.$consoleText.$endStr;
-
 }
 ?>
