@@ -1146,7 +1146,7 @@ function convertCustomBBCodesToXML($bbcode, $discussionid, $postnumber, $postid)
    }, $bbcode);
    $bbcode = preg_replace('#\[SPOILER](.*?)\[\/SPOILER]#is', '<DETAILS title="ПОДРОБНЕЕ +++"><s>[details="ПОДРОБНЕЕ +++"]</s><p>$1</p><e>[/details]</e></DETAILS>', $bbcode);
    $bbcode = preg_replace('#\[SPOILER=(.*?)](.*?)\[\/SPOILER]#is', '<DETAILS title="$1"><s>[details="$1"]</s><p>$2</p><e>[/details]</e></DETAILS>', $bbcode);
-   $bbcode = preg_replace('#\[(HIDE(.*?)|SHOWTOGROUPS(.*?))]((.)*?)\[(\/HIDE(.*?)|\/SHOWTOGROUPS(.*?))]#is', '<p><MEMBERS><s>[members]</s>$4<e>[/members]</e></MEMBERS></p>', $bbcode);
+   $bbcode = preg_replace('#\[(HIDE(.*?)|SHOWTOGROUPS(.*?))]((.)*?)\[(\/HIDE(.*?)|\/SHOWTOGROUPS(.*?))]#is', '<p>[REPLY]$4[/REPLY]</p>', $bbcode);
    $bbcode = preg_replace_callback(
       '#\[MENTION=(\d+)](.+?)\[\/MENTION]#is',
       function($m) use (&$mentionsArray, $postid) {
@@ -1173,7 +1173,7 @@ function convertCustomBBCodesToXML($bbcode, $discussionid, $postnumber, $postid)
    $bbcode = preg_replace('#\[QUOTE="?([^;]+?)"?]((.)+)\[\/QUOTE]#is', '<QUOTE><i>&gt; </i>@$1</br><p>$2</p></QUOTE>', $bbcode);
    $bbcode = preg_replace('#\[QUOTE]((.)*?)\[\/QUOTE]#is', '<QUOTE><i>&gt; </i><p>$1</p></QUOTE>', $bbcode);
    // Posts with this bbcodes need to be 'richtext' too
-   if (preg_match('#<QUOTE|<USERMENTION|<MEMBERS|<DETAILS|<UPL-IMAGE-PREVIEW#i', $bbcode) == 1) $bbcode = preg_replace('#<t>(.*)<\/t>#is', '<r>$1</r>', $bbcode);
+   if (preg_match('#<QUOTE|<USERMENTION|<DETAILS|<UPL-IMAGE-PREVIEW#i', $bbcode) == 1) $bbcode = preg_replace('#<t>(.*)<\/t>#is', '<r>$1</r>', $bbcode);
    return $bbcode;   
 }
 // ---------------------------------------------------------------------------
