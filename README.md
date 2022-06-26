@@ -24,6 +24,7 @@ Discussion: https://discuss.flarum.org/d/25961-vbulletin-to-flarum-migration-scr
 ## Requirements and Conditions
 * The current script only supports vBulletin 4.2.
 * The script assumes that both databases, vBulletin and Flarum, are on the same database server.
+* The script assumes that attachments and customavatars are stored in vB database. If you attachments stored in file system, then at this moment, script will not work for you. Maybe later I check this out
 * In Flarum needs to be already installed and enabled plugins:
    * [Old Passwords](https://github.com/migratetoflarum/old-passwords.git), which add in table USERS a column **migratetoflarum_old_password** used in this script for import users with their vb password
    * [FoF Upload](https://github.com/FriendsOfFlarum/upload.git)
