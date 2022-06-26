@@ -101,7 +101,7 @@ The posts will then be linked to the appropriate discussions.
 It will link discussions with users that have contributed to them.
 
 ### Step 6: Avatars import to db
-It will place to flarum table **users** paths to avatars
+It will place to flarum table **users** paths to their avatars
 
 ### Step 6: User discussion and comment count creation
 It will count discussions and comments for each user and save them accordingly.
@@ -110,9 +110,13 @@ It will count discussions and comments for each user and save them accordingly.
 It will sort the tags created in step 3 in alphabetical order (since there is no feature yet in Flarum to configure their display order).
 
 ## What the script does not do
-???
+* No private messages
+* No subscriptions (maybe add later)
+* Something else... ???
 
-## Instructions
+---
+
+# Instructions
 
 1. Install a local web server with a MySQL database server (e.g. XAMPP)
 2. Create a local copy of your vBulletin board database (export from production).
