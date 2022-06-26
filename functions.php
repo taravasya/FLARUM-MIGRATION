@@ -165,7 +165,7 @@ function formatText($connection, $text, $discussionid, $postnumber, $postid) {
 
 	   //replace urls to posts between tags [url]URL[/url]
 	   $text = preg_replace_callback(
-	      '#\[url](https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)(&page=\d+)?&p=(\d+).*post\d+)\[\/url]#i',
+	      '#\[url](https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)(&page=\d+)?&p=(\d+).*post\d+)\[\/url]#Ui',
 	      function ($m) use ($postsNumbersArray) {
 	         $postnumber = isset($postsNumbersArray[$m[5]]) ? $postsNumbersArray[$m[5]] : null;
 	         return isset($postnumber) ? '[URL="/d/'.$m[3].'/'.$postnumber.'&pid'.$m[5].'"]Пост № '.$m[5].'[/URL]' : '[URL="/d/'.$m[3].'"]'.$GLOBALS['post_not_found'].'[/URL]';
@@ -176,7 +176,7 @@ function formatText($connection, $text, $discussionid, $postnumber, $postid) {
 
 	   //replace urls to posts inside tags [url="URL"]
 	   $text = preg_replace_callback(
-	      '#\[URL="?https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)(&page=\d+)?&p=(\d+).*post\d+"?]#i',
+	      '#\[URL="?https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+?)(&page=\d+)?&p=(\d+?).*post\d+"?]#Ui',
 	      function ($m) use ($postsNumbersArray) {
 	         $postnumber = isset($postsNumbersArray[$m[4]]) ? $postsNumbersArray[$m[4]] : null;
 	         return isset($postnumber) ? '[URL="/d/'.$m[2].'/'.$postnumber.'&pid'.$m[4].'"]' : '[URL="/d/'.$m[2].'"]';
@@ -185,10 +185,10 @@ function formatText($connection, $text, $discussionid, $postnumber, $postid) {
 	   );
 
 	   //replace urls to threads between tags [url]URL[/url]
-	   $text = preg_replace('#\[URL]https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)\[\/URL]#i', '[URL="/d/$2"]'.$GLOBALS['is_thread'].' №$2[/URL]', $text);
+	   $text = preg_replace('#\[URL]https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+?)\[\/URL]#i', '[URL="/d/$2"]'.$GLOBALS['is_thread'].' №$2[/URL]', $text);
 
 	   //replace urls to threads inside tag [url="URL"]
-	   $text = preg_replace('#\[URL="?https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)"?]#i', '[URL="/d/$2"]', $text);
+	   $text = preg_replace('#\[URL="?https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+?)"?]#i', '[URL="/d/$2"]', $text);
 
 	   //replace text urls to posts between tags [url=url]URL[/url]
 	   $text = preg_replace_callback(
@@ -228,15 +228,15 @@ function textFormatterParse($text) {
    global $parser;
 
    //Adapte for formatter
-   $text = preg_replace('#\[VIDEO=(.*?)]((.)*?)\[\/VIDEO]#is', '[media]$2[/media]', $text);
-   $text = preg_replace('#\[ADDSHARE](.+)src="((https?:)?(.*?))"(.+)\[\/ADDSHARE]#is', '[media]https:$4[/media]', $text);
-   $text = preg_replace('#\[SIZE=1](.+?)\[\/SIZE]#is', '[SIZE=10]$1[/SIZE]', $text);
-   $text = preg_replace('#\[SIZE=2](.+?)\[\/SIZE]#is', '[SIZE=13]$1[/SIZE]', $text);
-   $text = preg_replace('#\[SIZE=3](.+?)\[\/SIZE]#is', '[SIZE=16]$1[/SIZE]', $text);
-   $text = preg_replace('#\[SIZE=4](.+?)\[\/SIZE]#is', '[SIZE=20]$1[/SIZE]', $text);
-   $text = preg_replace('#\[SIZE=5](.+?)\[\/SIZE]#is', '[SIZE=25]$1[/SIZE]', $text);
-   $text = preg_replace('#\[SIZE=6](.+?)\[\/SIZE]#is', '[SIZE=30]$1[/SIZE]', $text);
-   $text = preg_replace('#\[SIZE=7](.+?)\[\/SIZE]#is', '[SIZE=35]$1[/SIZE]', $text);
+   $text = preg_replace('#\[VIDEO=(.*?)]((.)*?)\[\/VIDEO]#is', '[MEDIA]$2[/MEDIA]', $text);
+   $text = preg_replace('#\[ADDSHARE](.+)src="((https?:)?(.*?))"(.+)\[\/ADDSHARE]#is', '[MEDIA]https:$4[/MEDIA]', $text);
+   $text = preg_replace('#\[SIZE=1]#is', '[SIZE=10]', $text);
+   $text = preg_replace('#\[SIZE=2]#is', '[SIZE=13]', $text);
+   $text = preg_replace('#\[SIZE=3]#is', '[SIZE=16]', $text);
+   $text = preg_replace('#\[SIZE=4]#is', '[SIZE=20]', $text);
+   $text = preg_replace('#\[SIZE=5]#is', '[SIZE=25]', $text);
+   $text = preg_replace('#\[SIZE=6]#is', '[SIZE=30]', $text);
+   $text = preg_replace('#\[SIZE=7]#is', '[SIZE=35]', $text);
    return $parser->parse($text);
 }
 
@@ -269,8 +269,8 @@ function convertCustomBBCodesToXML($bbcode, $discussionid, $postnumber, $postid)
    $bbcode = preg_replace_callback('#\[ATTACH(=CONFIG)?](\d{1,10})\[\/ATTACH]#', function ($m) use ($attachmentsArray) {
       return isset($attachmentsArray[$m[2]]) ? '<UPL-IMAGE-PREVIEW url="'.$attachmentsArray[$m[2]]['path'].'">[upl-image-preview url='.$attachmentsArray[$m[2]]['path'].']</UPL-IMAGE-PREVIEW>' : $m[0];
    }, $bbcode);
-   $bbcode = preg_replace('#\[SPOILER](.*?)\[\/SPOILER]#is', '<DETAILS title="ПОДРОБНЕЕ +++"><s>[details="ПОДРОБНЕЕ +++"]</s><p>$1</p><e>[/details]</e></DETAILS>', $bbcode);
-   $bbcode = preg_replace('#\[SPOILER=(.*?)](.*?)\[\/SPOILER]#is', '<DETAILS title="$1"><s>[details="$1"]</s><p>$2</p><e>[/details]</e></DETAILS>', $bbcode);
+   $bbcode = preg_replace('#\[SPOILER](.*?)\[\/SPOILER]#is', '<DETAILS title="⏵ Подробнее"><s>[details="Подробнее"]</s><p>$1</p><e>[/details]</e></DETAILS>', $bbcode);
+   $bbcode = preg_replace('#\[SPOILER=(.*?)](.*?)\[\/SPOILER]#is', '<DETAILS title="⏵ $1"><s>[details="$1"]</s><p>$2</p><e>[/details]</e></DETAILS>', $bbcode);
    $bbcode = preg_replace('#\[(HIDE(.*?)|SHOWTOGROUPS(.*?))]((.)*?)\[(\/HIDE(.*?)|\/SHOWTOGROUPS(.*?))]#is', '<p>[LOGIN]$4[/LOGIN]</p>', $bbcode);
    $bbcode = preg_replace_callback(
       '#\[MENTION=(\d+)](.+?)\[\/MENTION]#is',

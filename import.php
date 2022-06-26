@@ -203,7 +203,7 @@ consoleOut("STEP ".$step.": ".strtoupper($steps[$step]['title'])."\n",false);
 
 if ($steps[$step]['enabled']) {
 
-   $result = $vbulletinDbConnection->query("SELECT userid, usergroupid, from_unixtime(joindate) as user_joindate, from_unixtime(lastvisit) as user_lastvisit, username, password, salt, email FROM ${vbulletinDbPrefix}user");
+   $result = $vbulletinDbConnection->query("SELECT userid, usergroupid, from_unixtime(joindate) as user_joindate, from_unixtime(lastvisit) as user_lastvisit, username, password, salt, email, birthday_search FROM ${vbulletinDbPrefix}user");
    $totalUsers = $result->num_rows;
    
    if ($totalUsers) {
@@ -226,7 +226,12 @@ if ($steps[$step]['enabled']) {
             $joined_at = $row['user_joindate'];
             $last_seen_at = $row['user_lastvisit'];
             $oldpassword = $vbulletinDbConnection->real_escape_string('{"type":"md5-double","password":"'.$row["password"].'","salt-after":"'.$row["salt"].'"}');
-            $query = "INSERT INTO ".$flarumDbPrefix."users (id, username, email, password, joined_at, last_seen_at, is_email_confirmed, migratetoflarum_old_password) VALUES ( '$id', '$username', '$email', '$password', '$joined_at', '$last_seen_at', 1, '$oldpassword')";
+            $birthday = $vbulletinDbConnection->real_escape_string($row['birthday_search']);
+            if ($_useCustomPlugins) {
+               $query = "INSERT INTO ".$flarumDbPrefix."users (id, username, email, password, joined_at, last_seen_at, is_email_confirmed, migratetoflarum_old_password, birthday, showDobDate, showDobYear) VALUES ('$id', '$username', '$email', '$password', '$joined_at', '$last_seen_at', 1, '$oldpassword', $birthday, 1, 1)";
+            } else {
+               $query = "INSERT INTO ".$flarumDbPrefix."users (id, username, email, password, joined_at, last_seen_at, is_email_confirmed) VALUES ('$id', '$username', '$email', '$password', '$joined_at', '$last_seen_at', 1)";
+            }
             $res = $flarumDbConnection->query($query);
             
             if ($res === false) {
