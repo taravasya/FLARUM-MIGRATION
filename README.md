@@ -110,7 +110,7 @@ It will count discussions and comments for each user and save them accordingly.
 It will sort the tags created in step 3 in alphabetical order (since there is no feature yet in Flarum to configure their display order).
 
 ## What the script does not do
-
+???
 
 ## Instructions
 
@@ -118,7 +118,7 @@ It will sort the tags created in step 3 in alphabetical order (since there is no
 2. Create a local copy of your vBulletin board database (export from production).
 3. Install a fresh Flarum forum using the same database server.
 4. Export the fresh Flarum database into a file with option "Drop if exists" and disabled foreign key check (for later re-import if you want to run the migration again with your own customizations).
-5. Edit config.php and change the database settings to your local environment.
+5. Edit config.php and change options and the database settings to your local environment.
 6. Place all .php files from this repo to folder **import** in site root, and create all other this folders:
 ```
 flarum
@@ -134,9 +134,10 @@ flarum
 7. Run attachments.php
 8. Run avatars.php
 9. Run smiles.php 
-10. Run import.php. It will output information to the console telling you what is going on and some errors what occurred.
 
-(Point 7-9 will save BLOBs from vBulletin DB to file system to the folders what must be created at point 5. It is recommended to check the integrity of saved files) 
+(Point 7-9 will save BLOBs from vBulletin DB to file system to the folders what must be created at point 5. It is recommended to check the integrity of saved files)
+
+11. Run import.php. It will output information to the console telling you what is going on and some errors what occurred. 
 
 ### Starting a new attempt
 If something went wrong and you want to start over:
