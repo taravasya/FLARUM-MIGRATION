@@ -27,11 +27,11 @@ Discussion: https://discuss.flarum.org/d/25961-vbulletin-to-flarum-migration-scr
 * The script assumes that attachments and customavatars are stored in vB database. If you attachments stored in file system, then at this moment, script will not work for you. Maybe later I check this out
 * In Flarum needs to be already installed and enabled plugins:
    * [Old Passwords](https://github.com/migratetoflarum/old-passwords.git), which add in table USERS a column **migratetoflarum_old_password** used in this script for import users with their vb password
-   * [FoF Upload](https://github.com/FriendsOfFlarum/upload.git)
-   * [FoF Formatting](https://github.com/FriendsOfFlarum/formatting.git)
-   * [FoF BBCode Details](https://github.com/FriendsOfFlarum/bbcode-details.git)
-   * [BBCode Hide Content](https://github.com/datlechin/flarum-bbcode-hide-content.git)
-* Configure your bundle for [s9e/TextFormatter](https://s9etextformatter.readthedocs.io/Bundles/Your_own_bundle/) by editing configurator.php as discribed at this link and replace flarumbundle.php with your OR just use it as is. 
+   * [FoF Upload](https://github.com/FriendsOfFlarum/upload.git), for place inline attachments in post body to post content
+   * [FoF Formatting](https://github.com/FriendsOfFlarum/formatting.git), for use media embedded data (converted bbcode MEDIA)
+   * [FoF BBCode Details](https://github.com/FriendsOfFlarum/bbcode-details.git), for use converted bbcode SPOILER
+   * [BBCode Hide Content](https://github.com/datlechin/flarum-bbcode-hide-content.git), for use converted bbcode HIDE 
+* You need to configure your bundle for [s9e/TextFormatter](https://s9etextformatter.readthedocs.io/Bundles/Your_own_bundle/) by editing configurator.php as discribed at this link and replace flarumbundle.php to with your, use custom bbcodes from your vB forum OR just use it as is, bearing in mind that SPOILER, QUOTE, Emoji and Emoticons codes are disabled in the settings by default.
 
 ## What the script import.php does
 ### Step 1: Group Migration
