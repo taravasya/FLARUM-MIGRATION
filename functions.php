@@ -271,7 +271,7 @@ function convertCustomBBCodesToXML($bbcode, $discussionid, $postnumber, $postid)
    }, $bbcode);
    $bbcode = preg_replace('#\[SPOILER](.*?)\[\/SPOILER]#is', '<DETAILS title="⏵ Подробнее"><s>[details="Подробнее"]</s><p>$1</p><e>[/details]</e></DETAILS>', $bbcode);
    $bbcode = preg_replace('#\[SPOILER=(.*?)](.*?)\[\/SPOILER]#is', '<DETAILS title="⏵ $1"><s>[details="$1"]</s><p>$2</p><e>[/details]</e></DETAILS>', $bbcode);
-   $bbcode = preg_replace('#\[(HIDE(.*?)|SHOWTOGROUPS(.*?))]((.)*?)\[(\/HIDE(.*?)|\/SHOWTOGROUPS(.*?))]#is', '<p>[LOGIN]$4[/LOGIN]</p>', $bbcode);
+   $bbcode = preg_replace('#\[(HIDE(.*?)|SHOWTOGROUPS(.*?))]((.)*?)\[(\/HIDE(.*?)|\/SHOWTOGROUPS(.*?))]#is', '<p><s>[LOGIN]</s>$4<e>[/LOGIN]</e></p>', $bbcode);
    $bbcode = preg_replace_callback(
       '#\[MENTION=(\d+)](.+?)\[\/MENTION]#is',
       function($m) use (&$mentionsArray, $postid) {
@@ -379,7 +379,6 @@ function getFlarumUserId($db, $prefix, $username) {
 
 function limitUse () {
    global $threads_limit;
-   $limitUse = 0;
    /*$handle = fopen ("php://stdin","r");
    $line = fgets($handle);
    if(trim($line) != 'y'){
@@ -389,11 +388,11 @@ function limitUse () {
    fclose($handle);
    echo "\n";
    echo "Continuing...\n";*/
-   if ($limitUse > $threads_limit) {
+   if ($threads_limit < 1) {
 
       return false;
    }
-   $limitUse++;
+   $threads_limit--;
    return true;
 }
 

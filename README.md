@@ -25,13 +25,23 @@ Discussion: https://discuss.flarum.org/d/25961-vbulletin-to-flarum-migration-scr
 * The current script only supports vBulletin 4.2.
 * The script assumes that both databases, vBulletin and Flarum, are on the same database server.
 * The script assumes that attachments and customavatars are stored in vB database. If you attachments stored in file system, then at this moment, script will not work for you. Maybe later I check this out
-* In Flarum needs to be already installed and enabled plugins:
-   * [Old Passwords](https://github.com/migratetoflarum/old-passwords.git), which add in table USERS a column **migratetoflarum_old_password** used in this script for import users with their vb password
-   * [FoF Upload](https://github.com/FriendsOfFlarum/upload.git), for place inline attachments in post body to post content
+* You CAN use pre-configured here bbcode parser, bearing in mind that SPOILER, QUOTE, Emoji and Emoticons codes are disabled in my configuration, and parsed with my code. Or you can configure your bundle for [s9e/TextFormatter](https://s9etextformatter.readthedocs.io/Bundles/Your_own_bundle/) by editing configurator.php as it discribed in above link to generate your own bundle and replace with it pre-configured **flarumbundle.php**.
+* In Flarum needs to be already installed and enabled next plugins:
+
+   * ! [Old Passwords](https://github.com/migratetoflarum/old-passwords.git), which add to table USERS a column **migratetoflarum_old_password** used in this script for import users with their hashed vB password
+   * ! [Birthdays](https://github.com/datlechin/flarum-birthdays), for use birthdays
+     ( For plugins **Old Passwords** and **Birthdays** need DB data and prepaired db tables, so if you dont disable _$_useCustomPlugins_ in **config.php** you MUST to have installed and enabled this plugins in Flarum. Otherwise script will be failed )
+
+   * [FoF Upload](https://github.com/FriendsOfFlarum/upload.git), for place vB post-body inline attachments to posts content in Flarum 
    * [FoF Formatting](https://github.com/FriendsOfFlarum/formatting.git), for use media embedded data (converted bbcode MEDIA)
    * [FoF BBCode Details](https://github.com/FriendsOfFlarum/bbcode-details.git), for use converted bbcode SPOILER
-   * [BBCode Hide Content](https://github.com/datlechin/flarum-bbcode-hide-content.git), for use converted bbcode HIDE 
-* You need to configure your bundle for [s9e/TextFormatter](https://s9etextformatter.readthedocs.io/Bundles/Your_own_bundle/) by editing configurator.php as discribed at this link and replace flarumbundle.php to with your, use custom bbcodes from your vB forum OR just use it as is, bearing in mind that SPOILER, QUOTE, Emoji and Emoticons codes are disabled in the settings by default.
+   * [BBCode Hide Content](https://github.com/datlechin/flarum-bbcode-hide-content.git), for use converted bbcode HIDE
+     ( This plugins, can be not installed, but in this case imported text will not look like in vB. SPOILER, MEDIA, HIDE and SMILES will be look as plain text )
+
+   * [Flamoji](https://github.com/the-turk/flarum-flamoji) to easy add custom text symbols (like :this_custom_smile:) for your emoticons
+     ( This plugin is not necesary, and it here just as suggestion, because it can help for easy transfer old good gif-ed vB smiles to Flarum)   
+
+     ( If you dont want to use this additional flarum plugins, you can disable the import of the corresponding data in the settings that are in the **config.php** ) 
 
 ## What the script import.php does
 ### Step 1: Group Migration
@@ -54,7 +64,11 @@ It will create all vBulletin users in Flarum with fields
 * is_email_confirmed = 1
 * joined_at
 * last_seen_at
-* migratetoflarum_old_password = serialized data for Flarum **Old Passwords** plugin
+(next is optional)
+* migratetoflarum_old_password      //need **Old Passwords** plugin
+* birthday                          //need **Birthdays** plugin
+* showDobDate                       //need **Birthdays** plugin
+* showDobYear                       //need **Birthdays** plugin
 
 It will then create the group_user tabel entries with the appropriate group IDs from step 1.
 
@@ -94,8 +108,9 @@ Post fields:
 * type
 * content
 
-The posts content will be parsed with s9e/TextFormatter integrated in Flarum. But some bbcodes will be prepaided with custom code, what finished text will be the most acceptable
+The posts content will be parsed to XML(what Flarum used to store posts content in DB) with s9e/TextFormatter what integrated in Flarum.
 Inline image attachments [ATTACH]XXXID[/ATTACH] will be replaced with the <UPL-IMAGE-PREVIEW></UPL-IMAGE-PREVIEW> tags.
+
 The posts will then be linked to the appropriate discussions.
 
 ### Step 5: User/Discussions record creation
@@ -132,17 +147,15 @@ flarum
 	|  └─[here all files from this repo]
 	└──assets
 	   └──avatars
-	   └──smiles
 	   └──files
-	      └──vbattachments 
+	      └──vbattachments
 ```
 7. Run attachments.php
 8. Run avatars.php
-9. Run smiles.php 
 
 (Point 7-9 will save BLOBs from vBulletin DB to file system to the folders what must be created at point 5. It is recommended to check the integrity of saved files)
 
-11. Run import.php. It will output information to the console telling you what is going on and some errors what occurred. 
+10. Run import.php. It will output information to the console telling you what is going on and some errors what occurred. 
 
 ### Starting a new attempt
 If something went wrong and you want to start over:

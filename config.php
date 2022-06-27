@@ -16,9 +16,10 @@ $_convertCustomBBCodesToXML = true;
 $_convertCustomSmiliesToXML = true;
 $_convertInternalURLs = true;
 $_useCustomPlugins = true;
+
 // Set limits for testing purposes 
-$threads_limit  = 500000; // Limit threads in results to not run through all posts in db
-$threads_limit_ids = [false, 2, 5, 10]; // set to true first value and fill the list the ids of only those threads that will be included in the import. Other threads will be ignored.
+$threads_limit  = 500000; // Limit the number threads in results to not run through all posts from vB db
+$threads_limit_ids = [false, 2, 5, 10]; // Set to true first value and fill the list with ids of only those threads that will be included in the import. Other threads will be ignored.
 
 //Some locales used in function "formatText" for convert internal URLs
 $GLOBALS['post_not_found'] = '#Пост не найден#';

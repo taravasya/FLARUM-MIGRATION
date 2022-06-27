@@ -33,7 +33,7 @@ $result = $vbulletinDbConnection->query("SELECT `userid`, `filename`, `filedata`
 
 while ($row = $result->fetch_assoc()) {
    $ext = preg_replace('#.+?(\w{3,4})$#', '$1', $row["filename"]);
-   $fp = 'assets/avatars/';
+   $fp = '../assets/avatars/';
    $fn = $row["userid"].'.'.$ext;
    $fd = fopen($fp.$fn, 'wb');
    $message = saveBLOB($fp, $fn, $row["filedata"]) ? '[v] saved: '.$fn : '[!] error'.$fn;

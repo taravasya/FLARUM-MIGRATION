@@ -658,7 +658,7 @@ if ($steps[$step]['enabled']) {
    while ($row = $result->fetch_assoc()) {
       $ext = preg_replace('#.+?(\w{3,4})$#', '$1', $row["filename"]);
       $fn = $vbulletinDbConnection->real_escape_string($row["userid"].'.'.$ext);
-      $query = "UPDATE ".$flarumDbPrefix."users SET avatar_url = '$fn' WHERE flrm_users.id = ".$row["userid"].";";
+      $query = "UPDATE ".$flarumDbPrefix."users SET avatar_url = '$fn' WHERE ".$flarumDbPrefix."users.id = ".$row["userid"].";";
       $res = $flarumDbConnection->query($query);
       if ($res === false) {
          consoleOut("SQL error");

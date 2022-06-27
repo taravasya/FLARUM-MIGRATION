@@ -32,7 +32,7 @@ if ($vbulletinDbConnection->connect_error) {
 $result = $vbulletinDbConnection->query("SELECT `attachmentid`, `filedata`, `filesize`, `attachment`.`dateline`, `filename`, `extension`, `contentid` FROM `filedata` JOIN `attachment` ON `filedata`.`filedataid` = `attachment`.`filedataid` GROUP BY `filedata`.`filedataid`;");
 
 while ($row = $result->fetch_assoc()){
-   $fp = 'assets/files/vbattachments/';
+   $fp = '../assets/files/vbattachments/';
    $fn = $row["attachmentid"].'_'.$row["dateline"].'_'.$row["filesize"].'_'.$row["contentid"].'.'.$row["extension"];
    $fd = fopen($fp.$fn, 'wb');
    $message = saveBLOB($fp, $fn, $row["filedata"]) ? '[v] saved: '.$fn : '[!] error'.$fn;
