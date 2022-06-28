@@ -167,7 +167,7 @@ function formatText($connection, $text, $discussionid, $postnumber, $postid) {
 	   $text = preg_replace_callback(
 	      '#\[url](https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)(&page=\d+)?&p=(\d+).*post\d+)\[\/url]#Ui',
 	      function ($m) use ($postsNumbersArray) {
-	         $postnumber = isset($postsNumbersArray[$m[5]]) ? $postsNumbersArray[$m[5]] : null;
+	         $postnumber = isset($postsNumbersArray[$m[5]]) ? $postsNumbersArray[$m[5]][0] : null;
 	         return isset($postnumber) ? '[URL="/d/'.$m[3].'/'.$postnumber.'&pid'.$m[5].'"]Пост № '.$m[5].'[/URL]' : '[URL="/d/'.$m[3].'"]'.$GLOBALS['post_not_found'].'[/URL]';
 	      },
 	      $text
@@ -178,7 +178,7 @@ function formatText($connection, $text, $discussionid, $postnumber, $postid) {
 	   $text = preg_replace_callback(
 	      '#\[URL="?https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+?)(&page=\d+)?&p=(\d+?).*post\d+"?]#Ui',
 	      function ($m) use ($postsNumbersArray) {
-	         $postnumber = isset($postsNumbersArray[$m[4]]) ? $postsNumbersArray[$m[4]] : null;
+	         $postnumber = isset($postsNumbersArray[$m[4]]) ? $postsNumbersArray[$m[4]][0] : null;
 	         return isset($postnumber) ? '[URL="/d/'.$m[2].'/'.$postnumber.'&pid'.$m[4].'"]' : '[URL="/d/'.$m[2].'"]';
 	      },
 	      $text
@@ -194,7 +194,7 @@ function formatText($connection, $text, $discussionid, $postnumber, $postid) {
 	   $text = preg_replace_callback(
 	      '#https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)(&page=\d+)?&p=(\d+).*post\d+#i',
 	      function ($m) use ($postsNumbersArray) {
-	         return isset($postsNumbersArray[$m[4]]) ? $GLOBALS['is_post'].' №'.$m[4] : $GLOBALS['post_not_found'];
+	         return isset($postsNumbersArray[$m[4]][0]) ? $GLOBALS['is_post'].' №'.$m[4] : $GLOBALS['post_not_found'];
 	      },
 	      $text
 	   );
@@ -237,6 +237,22 @@ function textFormatterParse($text) {
    $text = preg_replace('#\[SIZE=5]#is', '[SIZE=25]', $text);
    $text = preg_replace('#\[SIZE=6]#is', '[SIZE=30]', $text);
    $text = preg_replace('#\[SIZE=7]#is', '[SIZE=35]', $text);
+   $text = preg_replace('#\[h1]#i', '[H1]', $text);
+   $text = preg_replace('#\[h2]#i', '[H2]', $text);
+   $text = preg_replace('#\[h3]#i', '[H3]', $text);
+   $text = preg_replace('#\[h4]#i', '[H4]', $text);
+   $text = preg_replace('#\[h4]#i', '[H4]', $text);
+   $text = preg_replace('#\[h4]#i', '[H4]', $text);
+   $text = preg_replace('#\[\/h1]#i', '[/H1]', $text);
+   $text = preg_replace('#\[\/h2]#i', '[/H2]', $text);
+   $text = preg_replace('#\[\/h3]#i', '[/H3]', $text);
+   $text = preg_replace('#\[\/h4]#i', '[/H4]', $text);
+   $text = preg_replace('#\[\/h4]#i', '[/H4]', $text);
+   $text = preg_replace('#\[\/h4]#i', '[/H4]', $text);
+   $text = preg_replace('#\[noparse]#i', '[NOPARSE]', $text);
+   $text = preg_replace('#\[\/noparse]#i', '[/NOPARSE]', $text);
+   $text = preg_replace('#\[tt=#', '[ACRONYM=', $text);
+   $text = preg_replace('#\[\/tt=]#i', '[/ACRONYM]', $text);
    return $parser->parse($text);
 }
 
@@ -266,9 +282,13 @@ function convertCustomBBCodesToXML($bbcode, $discussionid, $postnumber, $postid)
    global $attachmentsArray;
    global $mentionsArray;
    global $quotesArray;
-   $bbcode = preg_replace_callback('#\[ATTACH(=CONFIG)?](\d{1,10})\[\/ATTACH]#', function ($m) use ($attachmentsArray) {
-      return isset($attachmentsArray[$m[2]]) ? '<UPL-IMAGE-PREVIEW url="'.$attachmentsArray[$m[2]]['path'].'">[upl-image-preview url='.$attachmentsArray[$m[2]]['path'].']</UPL-IMAGE-PREVIEW>' : $m[0];
-   }, $bbcode);
+   global $postsNumbersArray;
+   $bbcode = preg_replace_callback('#\[ATTACH(=CONFIG)?](\d{1,10})\[\/ATTACH]#',
+      function ($m) use ($attachmentsArray) {
+      return isset($attachmentsArray[$m[2]]) ? '<UPL-IMAGE-PREVIEW url="'.$attachmentsArray[$m[2]]['path'].'">[upl-image-preview url='.$attachmentsArray[$m[2]]['path'].']</UPL-IMAGE-PREVIEW>' : 'Вложение №'.$m[2].' не найдено!';
+      },
+      $bbcode
+   );
    $bbcode = preg_replace('#\[SPOILER](.*?)\[\/SPOILER]#is', '<DETAILS title="⏵ Подробнее"><s>[details="Подробнее"]</s><p>$1</p><e>[/details]</e></DETAILS>', $bbcode);
    $bbcode = preg_replace('#\[SPOILER=(.*?)](.*?)\[\/SPOILER]#is', '<DETAILS title="⏵ $1"><s>[details="$1"]</s><p>$2</p><e>[/details]</e></DETAILS>', $bbcode);
    $bbcode = preg_replace('#\[(HIDE(.*?)|SHOWTOGROUPS(.*?))]((.)*?)\[(\/HIDE(.*?)|\/SHOWTOGROUPS(.*?))]#is', '<p><s>[LOGIN]</s>$4<e>[/LOGIN]</e></p>', $bbcode);
@@ -283,19 +303,17 @@ function convertCustomBBCodesToXML($bbcode, $discussionid, $postnumber, $postid)
       $bbcode
    );
    $bbcode = preg_replace_callback(
-      '#\[QUOTE(=\"?((.+?);(\d+))\"?)]((.)*?)\[\/QUOTE]#is',
-      function($m) use (&$quotesArray, $discussionid, $postid, $postnumber) {
-         $m[1] = isset($m[1]) ? $m[1] : '';
-         $m[2] = isset($m[2]) ? $m[2] : '';
-         $m[3] = isset($m[3]) ? $m[3] : '';
-         $m[4] = isset($m[4]) ? $m[4] : '';
-         $m[5] = isset($m[5]) ? $m[5] : '';
-         array_push($quotesArray, [$postid, $m[4]]);
-         return '<QUOTE><i>&gt; </i><p><POSTMENTION discussionid="'.$discussionid.'" displayname="'.$m[3].'" id="'.$m[4].'" number="'.$postnumber.'">@"'.$m[3].'"#p'.$m[4].'</POSTMENTION>'.$m[5].'</p></QUOTE>';
+      '#\[QUOTE="?([\w ]+;\d+)"?](.*)\[\/QUOTE]#isU',
+      function($m) use (&$quotesArray, $discussionid, $postid, $postnumber, $postsNumbersArray) {
+         list($name, $id) = explode(";", $m[1]);
+         array_push($quotesArray, [$postid, $id]);
+         $mentionet_postnumber = isset($postsNumbersArray[$id]) ? $postsNumbersArray[$id][0] : 1;
+         $mentionet_discussion = isset($postsNumbersArray[$id]) ? $postsNumbersArray[$id][1] : $discussionid;
+         return '<QUOTE><i>&gt; </i><p><POSTMENTION discussionid="'.$mentionet_discussion.'" displayname="'.$name.'" id="'.$id.'" number="'.$mentionet_postnumber.'">@"'.$name.'"#p'.$id.'</POSTMENTION> '.$m[2].' </p></QUOTE>';
       },
       $bbcode
    );
-   $bbcode = preg_replace('#\[QUOTE="?([^;]+?)"?]((.)+)\[\/QUOTE]#is', '<QUOTE><i>&gt; </i>@$1</br><p>$2</p></QUOTE>', $bbcode);
+   $bbcode = preg_replace('#\[QUOTE="??([^;]+)"?](.*)\[\/QUOTE]#isU', '<QUOTE><i>&gt; </i>@$1</br><p>$2</p></QUOTE>', $bbcode);
    $bbcode = preg_replace('#\[QUOTE]((.)*?)\[\/QUOTE]#is', '<QUOTE><i>&gt; </i><p>$1</p></QUOTE>', $bbcode);
    // Posts with this bbcodes need to be 'richtext' too
    if (preg_match('#<QUOTE|<USERMENTION|<DETAILS|<UPL-IMAGE-PREVIEW#i', $bbcode) == 1) $bbcode = preg_replace('#<t>(.*)<\/t>#is', '<r>$1</r>', $bbcode);
@@ -310,10 +328,11 @@ function convertCustomBBCodesToXML($bbcode, $discussionid, $postnumber, $postid)
  */
 function convertCustomSmiliesToXML($postText) {
    $vb_smiles_text = [' :\'( ', ' :-* ',' O_o ',' :[ ',' :D ',' 8*) ',' :P ',' ;) ',' :( ',' :) ','O:-)',' :-X ',' :-| ',' :-\\ ',' ::) '];
-   $fl_smiles_text = [' :Smile_Ak: ', ' :Smile_Aj: ',' :Smile_Ai: ',' :Smile_Ah: ',' :Smile_Ag: ',' :Smile_Af: ',' :Smile_Ae: ',' :Smile_Ad: ',' :Smile_Ac: ',' :Smile_Ab: ',' :Smile_Aa: ',' :Smile_Al: ',' :Smile_An: ',' :Smile_Ao: ', ' :Smile_Ap: '];
-   $postText = str_replace($vb_smiles_text, $fl_smiles_text, $postText);
+   $flarum_smiles_text = [' :Smile_Ak: ', ' :Smile_Aj: ',' :Smile_Ai: ',' :Smile_Ah: ',' :Smile_Ag: ',' :Smile_Af: ',' :Smile_Ae: ',' :Smile_Ad: ',' :Smile_Ac: ',' :Smile_Ab: ',' :Smile_Aa: ',' :Smile_Al: ',' :Smile_An: ',' :Smile_Ao: ', ' :Smile_Ap: '];
+   $postText = str_replace($vb_smiles_text, $flarum_smiles_text, $postText);
    $smiles_text = '#(:Smile_Ak:|:Smile_Aj:|:Smile_Ai:|:Smile_Ah:|:Smile_Ag:|:Smile_Af:|:Smile_Ae:|:Smile_Ad:|:Smile_Ac:|:Smile_Ab:|:Smile_Aa:|:Smile_Al:|:smile_am:|:Smile_An:|:Smile_Ao:|:Smile_Ap:|:smile_aq:|:smile_ar:|:smile_as:|:smile_at:|:smile_au:|:smile_av:|:smile_aw:|:smile_ax:|:smile_ay:|:smile_az:|:smile_ba:|:smile_bb:|:smile_bc:|:smile_bd:|:smile_be:|:smile_bf:|:smile_bg:|:smile_bh:|:smile_bi:|:smile_bj:|:smile_bk:|:smile_bl:|:smile_bm:|:smile_bn:|:smile_bo:|:smile_bp:|:smile_bq:|:smile_br:|:smile_bs:|:smile_bt:|:smile_bu:|:smile_bv:|:smile_bw:|:smile_bx:|:smile_by:|:smile_bz:|:smile_ca:|:smile_cb:|:smile_cd:|:smile_ce:|:smile_cf:|:smile_cg:|:smile_ch:|:smile_ci:|:smile_cj:|:smile_ck:|:smile_cl:|:smile_cm:|:smile_cn:|:smile_co:|:smile_cp:|:smile_cq:|:smile_cr:|:smile_cs:|:smile_ct:|:smile_cu:|:smile_cv:|:smile_cw:|:smile_cx:|:smile_cy:|:smile_cz:|:smile_da:|:smile_db:|:smile_dc:|:smile_dd:|:smile_de:|:smile_df:|:smile_dg:|:smile_dh:|:smile_di:|:smile_dj:|:smile_dk:|:smile_dl:|:smile_dm:|:smile_dn:|:smile_do:|:smile_dp:|:smile_dr:|:smile_ds:|:smile_dt:|:smile_du:|:smile_dv:|:smile_gamer:|:smile_preved:|:smile_wacko:|:smile_you:|:smile_mail:|:smile_blyaa:|:smile_yazik:|:smile_ft:|:smile_rd:)#';
    $postText = preg_replace($smiles_text, '<E>$1</E>', $postText);
+   if (preg_match($smiles_text, $postText) == 1) $postText = preg_replace('#<t>(.*)<\/t>#is', '<r>$1</r>', $postText);
    return $postText; 
 }
 
@@ -379,15 +398,6 @@ function getFlarumUserId($db, $prefix, $username) {
 
 function limitUse () {
    global $threads_limit;
-   /*$handle = fopen ("php://stdin","r");
-   $line = fgets($handle);
-   if(trim($line) != 'y'){
-       echo "ABORTING!\n";
-       exit;
-   }
-   fclose($handle);
-   echo "\n";
-   echo "Continuing...\n";*/
    if ($threads_limit < 1) {
 
       return false;

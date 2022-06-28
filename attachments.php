@@ -29,7 +29,7 @@ if ($vbulletinDbConnection->connect_error) {
 
 }
 
-$result = $vbulletinDbConnection->query("SELECT `attachmentid`, `filedata`, `filesize`, `attachment`.`dateline`, `filename`, `extension`, `contentid` FROM `filedata` JOIN `attachment` ON `filedata`.`filedataid` = `attachment`.`filedataid` GROUP BY `filedata`.`filedataid`;");
+$result = $vbulletinDbConnection->query("SELECT `attachmentid`, `filedata`, `filesize`, `attachment`.`dateline`, `filename`, `extension`, `contentid` FROM `attachment` JOIN `filedata` ON `filedata`.`filedataid` = `attachment`.`filedataid` GROUP BY `attachmentid`;");
 
 while ($row = $result->fetch_assoc()){
    $fp = '../assets/files/vbattachments/';

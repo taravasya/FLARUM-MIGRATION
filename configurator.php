@@ -1,5 +1,5 @@
 <?php
-include __DIR__ . '/vendor/autoload.php';
+include __DIR__ . '/../../vendor/autoload.php';
 // Use the Forum bundle's configurator
 $configurator = s9e\TextFormatter\Configurator\Bundles\Forum::getConfigurator();
 
@@ -23,6 +23,8 @@ $configurator->BBCodes->addFromRepository('H3');
 $configurator->BBCodes->addFromRepository('H4');
 $configurator->BBCodes->addFromRepository('H5');
 $configurator->BBCodes->addFromRepository('H6');
+$configurator->BBCodes->addFromRepository('NOPARSE');
+$configurator->BBCodes->addFromRepository('ACRONYM');
 $configurator->__unset('Emoji');
 $configurator->__unset('Emoticons');
 $configurator->BBCodes->delete('QUOTE');

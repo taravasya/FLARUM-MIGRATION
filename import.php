@@ -31,8 +31,8 @@ $parser = FlarumBundle::getParser();
 //
 $steps = array (
    array ( 'title' => 'Opening database connections',                'enabled' => true ),  // You cannot disable this step
-   array ( 'title' => 'Group migration',                             'enabled' => true ),
-   array ( 'title' => 'User migration',                              'enabled' => true ),
+   array ( 'title' => 'Group migration',                             'enabled' => false ),
+   array ( 'title' => 'User migration',                              'enabled' => false ),
    array ( 'title' => 'Forums => Tags migration',                    'enabled' => true ),
    array ( 'title' => 'Threads/Posts => Discussion/Posts migration', 'enabled' => true ),
    array ( 'title' => 'Avatars migration',                           'enabled' => true ),
@@ -408,13 +408,14 @@ if ($steps[$step]['enabled']) {
             $curThread = $row['threadid'];
             $curPostNumber = 1;
          }
-         $postsNumbersArray[$row['postid']] = $curPostNumber;
+         $postsNumbersArray[$row['postid']][0] = $curPostNumber;
+         $postsNumbersArray[$row['postid']][1] = $curThread;
          $curPostNumber++;
    }
    // Create an array for all attachments with size and path, to insert them in posts inlined
-   $attachmentsQuery = $vbulletinDbConnection->query("SELECT `attachmentid`, `filesize`, `attachment`.`dateline`, from_unixtime(`attachment`.`dateline`) AS `datetime`, `filename`, `extension`, `contentid` FROM `filedata` JOIN `attachment` ON `filedata`.`filedataid` = `attachment`.`filedataid` GROUP BY `filedata`.`filedataid` ORDER BY `attachmentid` ASC;");
+   $attachmentsQuery = $vbulletinDbConnection->query("SELECT `attachmentid`, `filesize`, `attachment`.`dateline`, from_unixtime(`attachment`.`dateline`) AS `datetime`, `filename`, `extension`, `contentid` FROM `attachment` JOIN `filedata` ON `filedata`.`filedataid` = `attachment`.`filedataid` GROUP BY `attachmentid` ORDER BY `attachmentid` ASC;");
    while ($row = $attachmentsQuery->fetch_assoc()) {
-      $fp = '/assets/files/vb/attachments/';
+      $fp = '/assets/files/vbattachments/';
       $fn = $row["attachmentid"].'_'.$row["dateline"].'_'.$row["filesize"].'_'.$row["contentid"].'.'.$row["extension"];
       $attachmentsArray[$row["attachmentid"]]['path'] = $fp.$fn;
       $attachmentsArray[$row["attachmentid"]]['size'] = $row["filesize"];
@@ -437,11 +438,11 @@ if ($steps[$step]['enabled']) {
             $curThreadCount++;
             $participantsArr = [];
             $lastPosterID = 0;
-            $threadid = $thread['threadid'];
+            $threadid = (int)$thread['threadid'];
             $query = "SELECT * FROM ${vbulletinDbPrefix}post WHERE threadid = {$threadid} ORDER BY postid ASC;";
             $postsQuery = $vbulletinDbConnection->query($query);
             $postCount = $postsQuery->num_rows;
-            if ($threads_limit_ids[0] && in_array($threadid, $threads_limit_ids)) continue;
+            if ($threads_limit_ids[0] && !in_array($threadid, $threads_limit_ids, true)) continue;
             if ($postCount) {
                consoleOut("\n#######################################################################################################",false);
                consoleOut("Migrating ".$postCount." posts for thread ID ".$thread["threadid"]." (".$curThreadCount." of ".$threadCount."):");
