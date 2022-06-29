@@ -31,5 +31,5 @@ $configurator->BBCodes->delete('QUOTE');
 $configurator->BBCodes->delete('SPOILER');
 
 // Save it back as your own
-$configurator->saveBundle('FlarumBundle', 'new3_flarumbundle.php');
+$configurator->saveBundle('FlarumBundle', 'new_flarumbundle.php');
 ?>

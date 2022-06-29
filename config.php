@@ -20,6 +20,8 @@ $_convertCustomSmiliesToXML = true;
 $_convertInternalURLs = true;
 //Use custom Flarum plugins: Old Passwords and Birthday, for import: hashed passwords and birthdays from vB 
 $_useCustomPlugins = true;
+//Remove bbcode tags from posts text (LEFT, RIGHT, INDENT, HIGHLIGHT, FONT). You can change this list in function removeUnwantedBcodes()
+$_removeUnwantedBcodes = true;
 
 // Set limits for testing purposes 
 $threads_limit  = 500000; // Limit the number threads in results to not run through all posts from vB db
@@ -29,4 +31,22 @@ $threads_limit_ids = array(false, 1, 5, 120, 2539); // Set to true first value a
 $GLOBALS['post_not_found'] = '[!Пост не найден!]';
 $GLOBALS['is_thread'] = 'Тема';
 $GLOBALS['is_post'] = 'Пост';
+
+//-----------------------------------------------------------------------------
+//
+// Migration steps
+// Set 'enabled' to false if you want the script to skip that step
+//
+$steps = array (
+   array ( 'title' => 'Opening database connections',                'enabled' => true ),  // You cannot disable this step
+   array ( 'title' => 'Group migration',                             'enabled' => true ),
+   array ( 'title' => 'User migration',                              'enabled' => true ),
+   array ( 'title' => 'Forums => Tags migration',                    'enabled' => true ),
+   array ( 'title' => 'Threads/Posts => Discussion/Posts migration', 'enabled' => true ),
+   array ( 'title' => 'Avatars migration',                           'enabled' => true ),
+   array ( 'title' => 'User/Discussions record creation',            'enabled' => true ),
+   array ( 'title' => 'User discussion/comment count creation',      'enabled' => true ),
+   array ( 'title' => 'Tag sort',                                    'enabled' => false ),
+   array ( 'title' => 'Closing database connections',                'enabled' => true ),  // You cannot disable this step
+);
 ?>

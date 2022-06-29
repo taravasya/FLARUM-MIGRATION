@@ -24,25 +24,8 @@ include __DIR__ . '/../../vendor/autoload.php';
 include_once 'flarumbundle.php'; //!!! here custom bundle for parsing vb posts content @taravasya
 $parser = FlarumBundle::getParser();
 
-//-----------------------------------------------------------------------------
-//
-// Migration steps
-// Set 'enabled' to false if you want the script to skip that step
-//
-$steps = array (
-   array ( 'title' => 'Opening database connections',                'enabled' => true ),  // You cannot disable this step
-   array ( 'title' => 'Group migration',                             'enabled' => false ),
-   array ( 'title' => 'User migration',                              'enabled' => false ),
-   array ( 'title' => 'Forums => Tags migration',                    'enabled' => true ),
-   array ( 'title' => 'Threads/Posts => Discussion/Posts migration', 'enabled' => true ),
-   array ( 'title' => 'Avatars migration',                           'enabled' => true ),
-   array ( 'title' => 'User/Discussions record creation',            'enabled' => true ),
-   array ( 'title' => 'User discussion/comment count creation',      'enabled' => true ),
-   array ( 'title' => 'Tag sort',                                    'enabled' => false ),
-   array ( 'title' => 'Closing database connections',                'enabled' => true ),  // You cannot disable this step
-);
-$step = -1;
 
+$step = -1;
 consoleOut("\n===============================================================================",false);
 consoleOut("vBulletin to Flarum Migration Script                                     v".$script_version,false);
 
@@ -203,7 +186,7 @@ consoleOut("STEP ".$step.": ".strtoupper($steps[$step]['title'])."\n",false);
 
 if ($steps[$step]['enabled']) {
 
-   $result = $vbulletinDbConnection->query("SELECT userid, usergroupid, from_unixtime(joindate) as user_joindate, from_unixtime(lastvisit) as user_lastvisit, username, password, salt, email, birthday_search FROM ${vbulletinDbPrefix}user");
+   $result = $vbulletinDbConnection->query("SELECT userid, usergroupid, membergroupids, from_unixtime(joindate) as user_joindate, from_unixtime(lastvisit) as user_lastvisit, username, password, salt, email, birthday_search FROM ${vbulletinDbPrefix}user");
    $totalUsers = $result->num_rows;
    
    if ($totalUsers) {
@@ -226,14 +209,17 @@ if ($steps[$step]['enabled']) {
             $joined_at = $row['user_joindate'];
             $last_seen_at = $row['user_lastvisit'];
             $oldpassword = $vbulletinDbConnection->real_escape_string('{"type":"md5-double","password":"'.$row["password"].'","salt-after":"'.$row["salt"].'"}');
-            $birthday = $vbulletinDbConnection->real_escape_string($row['birthday_search']);
+            $birthday = $row['birthday_search'];
             if ($_useCustomPlugins) {
-               $query = "INSERT INTO ".$flarumDbPrefix."users (id, username, email, password, joined_at, last_seen_at, is_email_confirmed, migratetoflarum_old_password, birthday, showDobDate, showDobYear) VALUES ('$id', '$username', '$email', '$password', '$joined_at', '$last_seen_at', 1, '$oldpassword', $birthday, 1, 1)";
+               if ($birthday != '0000-00-00') {
+                  $query = "INSERT INTO ".$flarumDbPrefix."users (id, username, email, password, joined_at, last_seen_at, is_email_confirmed, migratetoflarum_old_password, birthday, showDobDate, showDobYear) VALUES ('$id', '$username', '$email', '$password', '$joined_at', '$last_seen_at', 1, '$oldpassword', '$birthday', 1, 1)";                   
+               } else {
+                  $query = "INSERT INTO ".$flarumDbPrefix."users (id, username, email, password, joined_at, last_seen_at, is_email_confirmed, migratetoflarum_old_password,  showDobDate, showDobYear) VALUES ('$id', '$username', '$email', '$password', '$joined_at', '$last_seen_at', 1, '$oldpassword', 1, 1)";
+               }
             } else {
                $query = "INSERT INTO ".$flarumDbPrefix."users (id, username, email, password, joined_at, last_seen_at, is_email_confirmed) VALUES ('$id', '$username', '$email', '$password', '$joined_at', '$last_seen_at', 1)";
             }
             $res = $flarumDbConnection->query($query);
-            
             if ($res === false) {
                
                consoleOut("SQL error");
@@ -241,53 +227,59 @@ if ($steps[$step]['enabled']) {
                consoleOut($flarumDbConnection->error."\n",false);
 
             } else {
+               $ids = array();
+               array_push($ids, $row['usergroupid']);
+               if ($row['membergroupids'] != '') $ids = array_merge($ids, explode(',', $row['membergroupids']));
 
                //
                // Pick the appropriate usergroup.
                // We are matching the first 7 default groups in vBulletin to the 4 default Flarum groups.
                // Group IDs > 7 are just added as is.
                //
-               switch ($row['usergroupid']) {
+               foreach ($ids as $usergroupid) {
+                  switch ($usergroupid) {
 
-                  // | VBULLETIN                              |  FLARUM      |
-                  // | 1 = Unregistered / Not Logged In       |  2 = Guests  |
-                  // | 3 = Users awaiting email confirmation  |  2 = Guests  |
-                  // | 4 = (COPPA) Users Awaiting Moderation  |  2 = Guests  |
-                  case 1:
-                  case 3:
-                  case 4:
-                     $query = "INSERT INTO ".$flarumDbPrefix."group_user (user_id, group_id) VALUES ( '$id', '2')";
-                     $res = $flarumDbConnection->query($query);
-                     break;
-         
-                  // | VBULLETIN                              |  FLARUM      |
-                  // | 2 = Registered users                   |  3 = Members |
-                  case 2:
-                     $query = "INSERT INTO ".$flarumDbPrefix."group_user (user_id, group_id) VALUES ( '$id', '3')";
-                     $res = $flarumDbConnection->query($query);
-                     break;
+                     // | VBULLETIN                              |  FLARUM      |
+                     // | 1 = Unregistered / Not Logged In       |  2 = Guests  |
+                     // | 3 = Users awaiting email confirmation  |  2 = Guests  |
+                     // | 4 = (COPPA) Users Awaiting Moderation  |  2 = Guests  |
+                     case 1:
+                     case 3:
+                     case 4:
+                        $query = "INSERT INTO ".$flarumDbPrefix."group_user (user_id, group_id) VALUES ( '$id', '2')";
+                        $res = $flarumDbConnection->query($query);
+                        break;
+            
+                     // | VBULLETIN                              |  FLARUM      |
+                     // | 2 = Registered users                   |  3 = Members |
+                     case 2:
+                     case 33:
+                        $query = "INSERT INTO ".$flarumDbPrefix."group_user (user_id, group_id) VALUES ( '$id', '3')";
+                        $res = $flarumDbConnection->query($query);
+                        break;
 
-                  // | VBULLETIN                              |  FLARUM      |
-                  // | 5 = Super Moderators                   |  4 = Mods    |
-                  // | 7 = Moderators                         |  4 = Mods    |
-                  case 5:
-                  case 7:
-                     $query = "INSERT INTO ".$flarumDbPrefix."group_user (user_id, group_id) VALUES ( '$id', '4')";
-                     $res = $flarumDbConnection->query($query);
-                     break;
+                     // | VBULLETIN                              |  FLARUM      |
+                     // | 5 = Super Moderators                   |  4 = Mods    |
+                     // | 7 = Moderators                         |  4 = Mods    |
+                     case 5:
+                     case 7:
+                        $query = "INSERT INTO ".$flarumDbPrefix."group_user (user_id, group_id) VALUES ( '$id', '4')";
+                        $res = $flarumDbConnection->query($query);
+                        break;
 
-                  // | VBULLETIN                              |  FLARUM      |
-                  // | 6 = Administrators                     |  1 = Admins  |
-                  case 6:
-                     $query = "INSERT INTO ".$flarumDbPrefix."group_user (user_id, group_id) VALUES ( '$id', '1')";
-                     $res = $flarumDbConnection->query($query);
-                     break;
-   
-                  default:
-                     $query = "INSERT INTO ".$flarumDbPrefix."group_user (user_id, group_id) VALUES ( '$id', '".$row['usergroupid']."')";
-                     $res = $flarumDbConnection->query($query);
-                     break;
+                     // | VBULLETIN                              |  FLARUM      |
+                     // | 6 = Administrators                     |  1 = Admins  |
+                     case 6:
+                        $query = "INSERT INTO ".$flarumDbPrefix."group_user (user_id, group_id) VALUES ( '$id', '1')";
+                        $res = $flarumDbConnection->query($query);
+                        break;
+      
+                     default:
+                        $query = "INSERT INTO ".$flarumDbPrefix."group_user (user_id, group_id) VALUES ( '$id', '".$usergroupid."')";
+                        $res = $flarumDbConnection->query($query);
+                        break;
 
+                  }
                }
 
                echo(".");
@@ -351,6 +343,8 @@ if ($steps[$step]['enabled']) {
          if($res === false) {
 
             consoleOut("Tag ID ".$id." might already exist. Trying to update record...");
+            $name = mysql_escape_mimic($row["title_clean"].'1');
+            $slug = mysql_escape_mimic(slugify($name));
             $queryupdate = "UPDATE ".$flarumDbPrefix."tags SET name = '$name', description = '$description', slug = '$slug', last_posted_at = '$last_posted_at', last_posted_user_id = $last_posted_user_id, discussion_count = $discussion_count WHERE id = '$id' ;";
             $res = $flarumDbConnection->query($queryupdate);
             

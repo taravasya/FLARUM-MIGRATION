@@ -38,8 +38,8 @@ function rand_color() {
    /*$colors_pallet = array('#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffc107', '#ff9800', '#ff5722', '#795548', '#9e9e9e', '#607d8b');
    return $colors_pallet[random_int(0,17)];*/
    $h = random_int(0,360);
-   $s = random_int(40,80);
-   $l = random_int(35,50); 
+   $s = random_int(55,70);
+   $l = random_int(55,70);
    return convertHSL($h, $s, $l, true);
 }
 
@@ -114,7 +114,7 @@ function convertHSL($h, $s, $l, $toHex=true){
         $b = ($b < 15)? '0' . dechex($b) : dechex($b);
         return "#$r$g$b";
     } else {
-        return "rgb($r, $g, $b)";    
+        return "rgb($r, $g, $b)";
       }
 }
 
@@ -127,7 +127,7 @@ function convertHSL($h, $s, $l, $toHex=true){
 function mysql_escape_mimic($inp) {
 
     if (is_array($inp)) {
-      
+
       return array_map(__METHOD__, $inp);
 
    }
@@ -135,17 +135,17 @@ function mysql_escape_mimic($inp) {
     if (!empty($inp) && is_string($inp)) {
 
       return str_replace(array('\\', "\0", "\n", "\r", "'", '"', "\x1a"), array('\\\\', '\\0', '\\n', '\\r', "\\'", '\\"', '\\Z'), $inp);
-      
+
    }
-   
+
    return $inp;
-   
+
 }
 
 // ---------------------------------------------------------------------------
 /**
  * Formats vBulletin's text to Flarum's text format.
- * 
+ *
  * @param  object    $connection    Database connection
  * @param  string    $text          Text to convert
  * @return string    Converted text
@@ -153,10 +153,11 @@ function mysql_escape_mimic($inp) {
 function formatText($connection, $text, $discussionid, $postnumber, $postid) {
    global $mentionsArray;
    global $quotesArray;
-   global $postsNumbersArray;   
-   global $_convertCustomBBCodesToXML;   
+   global $postsNumbersArray;
+   global $_convertCustomBBCodesToXML;
    global $_convertCustomSmiliesToXML;
    global $_convertInternalURLs;
+   global $_removeUnwantedBcodes;
 
    $text = html_entity_decode($text);
    if ($_convertInternalURLs) {
@@ -203,20 +204,27 @@ function formatText($connection, $text, $discussionid, $postnumber, $postid) {
 	   $text = preg_replace('#https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)#i', $GLOBALS['is_thread'].' №$2', $text);
 
    }
-   //clear whitespaces what placed next to square brackets between tags: [code] <<<MY TEXT[/code] (due to a typo or negligence). 
-   $text = preg_replace('#(\[\S+])([[:blank:]]+?)(.+)([[:blank:]]+)?(\[\/\S+])#U', '$1$3$5', $text);
+   //clear whitespaces what placed next to square brackets between tags: [code] <<<MY TEXT[/code] (due to a typo or negligence).
+   $text = preg_replace('#(\[\S+])([[:blank:]]+?)(.+)([[:blank:]]+)?(\[\/\S+])#U', ' $1$3$5 ', $text);
+
+   //remove bbcode tags that will be ignored with flarum or, just dont needed
+   if ($_removeUnwantedBcodes) $text = removeUnwantedBcodes($text);
 
    $text = textFormatterParse($text);
-   //echo(PHP_EOL.'[#####FORMAT] : '.$text.PHP_EOL);
 
    if ($_convertCustomBBCodesToXML) $text = convertCustomBBCodesToXML($text, $discussionid, $postnumber, $postid);
-   //echo(PHP_EOL.'[#####CUSTOM] : '.$text.PHP_EOL); 
 
    if ($_convertCustomSmiliesToXML) $text = convertCustomSmiliesToXML($text);
 
    return $connection->real_escape_string($text);
-   
+
 }
+
+function removeUnwantedBcodes ($text) {
+   $UnwantedBcodes = array('[LEFT]', '[/LEFT]', '[RIGHT]', '[/RIGHT]', '[INDENT]', '[/INDENT]', '[HIGHLIGHT]', '[/HIGHLIGHT]', '[FONT]', '[/FONT]');
+   return str_ireplace($UnwantedBcodes, '', $text);
+}
+
 // ---------------------------------------------------------------------------
 /**
  * Convert bbcodes to XML templates with s9e\TextFormatter
@@ -226,33 +234,24 @@ function formatText($connection, $text, $discussionid, $postnumber, $postid) {
  */
 function textFormatterParse($text) {
    global $parser;
-
-   //Adapte for formatter
+   //Adapte for s9etextformatter
    $text = preg_replace('#\[VIDEO=(.*?)]((.)*?)\[\/VIDEO]#is', '[MEDIA]$2[/MEDIA]', $text);
-   $text = preg_replace('#\[ADDSHARE](.+)src="((https?:)?(.*?))"(.+)\[\/ADDSHARE]#is', '[MEDIA]https:$4[/MEDIA]', $text);
-   $text = preg_replace('#\[SIZE=1]#is', '[SIZE=10]', $text);
-   $text = preg_replace('#\[SIZE=2]#is', '[SIZE=13]', $text);
-   $text = preg_replace('#\[SIZE=3]#is', '[SIZE=16]', $text);
-   $text = preg_replace('#\[SIZE=4]#is', '[SIZE=20]', $text);
-   $text = preg_replace('#\[SIZE=5]#is', '[SIZE=25]', $text);
-   $text = preg_replace('#\[SIZE=6]#is', '[SIZE=30]', $text);
-   $text = preg_replace('#\[SIZE=7]#is', '[SIZE=35]', $text);
-   $text = preg_replace('#\[h1]#i', '[H1]', $text);
-   $text = preg_replace('#\[h2]#i', '[H2]', $text);
-   $text = preg_replace('#\[h3]#i', '[H3]', $text);
-   $text = preg_replace('#\[h4]#i', '[H4]', $text);
-   $text = preg_replace('#\[h4]#i', '[H4]', $text);
-   $text = preg_replace('#\[h4]#i', '[H4]', $text);
-   $text = preg_replace('#\[\/h1]#i', '[/H1]', $text);
-   $text = preg_replace('#\[\/h2]#i', '[/H2]', $text);
-   $text = preg_replace('#\[\/h3]#i', '[/H3]', $text);
-   $text = preg_replace('#\[\/h4]#i', '[/H4]', $text);
-   $text = preg_replace('#\[\/h4]#i', '[/H4]', $text);
-   $text = preg_replace('#\[\/h4]#i', '[/H4]', $text);
+   $text = preg_replace('#\[ADDSHARE](.+)src="((https?:)?(.*?))"(.+)\[\/ADDSHARE]#is', 'https:$4', $text);
+   $text = preg_replace_callback(
+       '#\[size=(\d)[^]]*](((?R)|.).*?)\[\/size]#si',
+       function($m) {
+           $trans = array(1 => 6, 2 => 6, 3 => 5, 5 => 3, 6 => 2, 7 => 1);
+           $m[1] = strtr($m[1], $trans);
+           return '[H'.$m[1].']'.$m[2].'[/H'.$m[1].']';
+       },
+       $text
+   );
+   $text = preg_replace('#\[H=(\d)[^]]*](((?R)|.).*?)\[\/H]#si', '[H$1]$2[/H$1]', $text);
    $text = preg_replace('#\[noparse]#i', '[NOPARSE]', $text);
    $text = preg_replace('#\[\/noparse]#i', '[/NOPARSE]', $text);
    $text = preg_replace('#\[tt=#', '[ACRONYM=', $text);
    $text = preg_replace('#\[\/tt=]#i', '[/ACRONYM]', $text);
+
    return $parser->parse($text);
 }
 
@@ -291,7 +290,7 @@ function convertCustomBBCodesToXML($bbcode, $discussionid, $postnumber, $postid)
    );
    $bbcode = preg_replace('#\[SPOILER](.*?)\[\/SPOILER]#is', '<DETAILS title="⏵ Подробнее"><s>[details="Подробнее"]</s><p>$1</p><e>[/details]</e></DETAILS>', $bbcode);
    $bbcode = preg_replace('#\[SPOILER=(.*?)](.*?)\[\/SPOILER]#is', '<DETAILS title="⏵ $1"><s>[details="$1"]</s><p>$2</p><e>[/details]</e></DETAILS>', $bbcode);
-   $bbcode = preg_replace('#\[(HIDE(.*?)|SHOWTOGROUPS(.*?))]((.)*?)\[(\/HIDE(.*?)|\/SHOWTOGROUPS(.*?))]#is', '<p><s>[LOGIN]</s>$4<e>[/LOGIN]</e></p>', $bbcode);
+   $bbcode = preg_replace('#\[(HIDE(.*?)|SHOWTOGROUPS(.*?))]((.)*?)\[(\/HIDE(.*?)|\/SHOWTOGROUPS(.*?))]#is', '<p>[LOGIN]$4[/LOGIN]</p>', $bbcode);
    $bbcode = preg_replace_callback(
       '#\[MENTION=(\d+)](.+?)\[\/MENTION]#is',
       function($m) use (&$mentionsArray, $postid) {
@@ -302,22 +301,24 @@ function convertCustomBBCodesToXML($bbcode, $discussionid, $postnumber, $postid)
       },
       $bbcode
    );
-   $bbcode = preg_replace_callback(
-      '#\[QUOTE="?([\w ]+;\d+)"?](.*)\[\/QUOTE]#isU',
-      function($m) use (&$quotesArray, $discussionid, $postid, $postnumber, $postsNumbersArray) {
-         list($name, $id) = explode(";", $m[1]);
-         array_push($quotesArray, [$postid, $id]);
-         $mentionet_postnumber = isset($postsNumbersArray[$id]) ? $postsNumbersArray[$id][0] : 1;
-         $mentionet_discussion = isset($postsNumbersArray[$id]) ? $postsNumbersArray[$id][1] : $discussionid;
-         return '<QUOTE><i>&gt; </i><p><POSTMENTION discussionid="'.$mentionet_discussion.'" displayname="'.$name.'" id="'.$id.'" number="'.$mentionet_postnumber.'">@"'.$name.'"#p'.$id.'</POSTMENTION> '.$m[2].' </p></QUOTE>';
-      },
-      $bbcode
-   );
-   $bbcode = preg_replace('#\[QUOTE="??([^;]+)"?](.*)\[\/QUOTE]#isU', '<QUOTE><i>&gt; </i>@$1</br><p>$2</p></QUOTE>', $bbcode);
+   while (preg_match('#\[QUOTE="?(.+;\d+)"?](?s)(.+)\[\/QUOTE]#iU', $bbcode)) {
+       $bbcode = preg_replace_callback(
+          '#\[QUOTE="?(.+;\d+)"?](?s)(.+)\[\/QUOTE]#iU',
+          function($m) use (&$quotesArray, $discussionid, $postid, $postnumber, $postsNumbersArray) {
+             list($name, $id) = explode(";", $m[1]);
+             array_push($quotesArray, [$postid, $id]);
+             $mentionet_postnumber = isset($postsNumbersArray[$id]) ? $postsNumbersArray[$id][0] : 1;
+             $mentionet_discussion = isset($postsNumbersArray[$id]) ? $postsNumbersArray[$id][1] : $discussionid;
+             return '<QUOTE><i>&gt; </i><p><POSTMENTION discussionid="'.$mentionet_discussion.'" displayname="'.$name.'" id="'.$id.'" number="'.$mentionet_postnumber.'">@"'.$name.'"#p'.$id.'</POSTMENTION> '.$m[2].' </p></QUOTE>';
+          },
+          $bbcode
+       );
+   }
+   $bbcode = preg_replace('#\[QUOTE="?([^;]+)"?](.*)\[\/QUOTE]#isU', '<QUOTE><i>&gt; </i>@$1</br><p>$2</p></QUOTE>', $bbcode);
    $bbcode = preg_replace('#\[QUOTE]((.)*?)\[\/QUOTE]#is', '<QUOTE><i>&gt; </i><p>$1</p></QUOTE>', $bbcode);
    // Posts with this bbcodes need to be 'richtext' too
    if (preg_match('#<QUOTE|<USERMENTION|<DETAILS|<UPL-IMAGE-PREVIEW#i', $bbcode) == 1) $bbcode = preg_replace('#<t>(.*)<\/t>#is', '<r>$1</r>', $bbcode);
-   return $bbcode;   
+   return $bbcode;
 }
 // ---------------------------------------------------------------------------
 /**
@@ -327,13 +328,13 @@ function convertCustomBBCodesToXML($bbcode, $discussionid, $postnumber, $postid)
  * @return string    Converted text
  */
 function convertCustomSmiliesToXML($postText) {
-   $vb_smiles_text = [' :\'( ', ' :-* ',' O_o ',' :[ ',' :D ',' 8*) ',' :P ',' ;) ',' :( ',' :) ','O:-)',' :-X ',' :-| ',' :-\\ ',' ::) '];
+   $vb_smiles_text = [":'(", ':-*','O_o',' :[ ',':D','8*)',' :P ',';)',' :( ',' :) ','O:-)',':-X',':-|',':-\\','::)'];
    $flarum_smiles_text = [' :Smile_Ak: ', ' :Smile_Aj: ',' :Smile_Ai: ',' :Smile_Ah: ',' :Smile_Ag: ',' :Smile_Af: ',' :Smile_Ae: ',' :Smile_Ad: ',' :Smile_Ac: ',' :Smile_Ab: ',' :Smile_Aa: ',' :Smile_Al: ',' :Smile_An: ',' :Smile_Ao: ', ' :Smile_Ap: '];
    $postText = str_replace($vb_smiles_text, $flarum_smiles_text, $postText);
-   $smiles_text = '#(:Smile_Ak:|:Smile_Aj:|:Smile_Ai:|:Smile_Ah:|:Smile_Ag:|:Smile_Af:|:Smile_Ae:|:Smile_Ad:|:Smile_Ac:|:Smile_Ab:|:Smile_Aa:|:Smile_Al:|:smile_am:|:Smile_An:|:Smile_Ao:|:Smile_Ap:|:smile_aq:|:smile_ar:|:smile_as:|:smile_at:|:smile_au:|:smile_av:|:smile_aw:|:smile_ax:|:smile_ay:|:smile_az:|:smile_ba:|:smile_bb:|:smile_bc:|:smile_bd:|:smile_be:|:smile_bf:|:smile_bg:|:smile_bh:|:smile_bi:|:smile_bj:|:smile_bk:|:smile_bl:|:smile_bm:|:smile_bn:|:smile_bo:|:smile_bp:|:smile_bq:|:smile_br:|:smile_bs:|:smile_bt:|:smile_bu:|:smile_bv:|:smile_bw:|:smile_bx:|:smile_by:|:smile_bz:|:smile_ca:|:smile_cb:|:smile_cd:|:smile_ce:|:smile_cf:|:smile_cg:|:smile_ch:|:smile_ci:|:smile_cj:|:smile_ck:|:smile_cl:|:smile_cm:|:smile_cn:|:smile_co:|:smile_cp:|:smile_cq:|:smile_cr:|:smile_cs:|:smile_ct:|:smile_cu:|:smile_cv:|:smile_cw:|:smile_cx:|:smile_cy:|:smile_cz:|:smile_da:|:smile_db:|:smile_dc:|:smile_dd:|:smile_de:|:smile_df:|:smile_dg:|:smile_dh:|:smile_di:|:smile_dj:|:smile_dk:|:smile_dl:|:smile_dm:|:smile_dn:|:smile_do:|:smile_dp:|:smile_dr:|:smile_ds:|:smile_dt:|:smile_du:|:smile_dv:|:smile_gamer:|:smile_preved:|:smile_wacko:|:smile_you:|:smile_mail:|:smile_blyaa:|:smile_yazik:|:smile_ft:|:smile_rd:)#';
+   $smiles_text = '#(:Smile_Ak:|:Smile_Aj:|:Smile_Ai:|:Smile_Ah:|:Smile_Ag:|:Smile_Af:|:Smile_Ae:|:Smile_Ad:|:Smile_Ac:|:Smile_Ab:|:Smile_Aa:|:Smile_Al:|:smile_am:|:Smile_An:|:Smile_Ao:|:Smile_Ap:|:smile_aq:|:smile_ar:|:smile_as:|:smile_at:|:smile_au:|:smile_av:|:smile_aw:|:smile_ax:|:smile_ay:|:smile_az:|:smile_ba:|:smile_bb:|:smile_bc:|:smile_bd:|:smile_be:|:smile_bf:|:smile_bg:|:smile_bh:|:smile_bi:|:smile_bj:|:smile_bk:|:smile_bl:|:smile_bm:|:smile_bn:|:smile_bo:|:smile_bp:|:smile_bq:|:smile_br:|:smile_bs:|:smile_bt:|:smile_bu:|:smile_bv:|:smile_bw:|:smile_bx:|:smile_by:|:smile_bz:|:smile_ca:|:smile_cb:|:smile_cd:|:smile_ce:|:smile_cf:|:smile_cg:|:smile_ch:|:smile_ci:|:smile_cj:|:smile_ck:|:smile_cl:|:smile_cm:|:smile_cn:|:smile_co:|:smile_cp:|:smile_cq:|:smile_cr:|:smile_cs:|:smile_ct:|:smile_cu:|:smile_cv:|:smile_cw:|:smile_cx:|:smile_cy:|:smile_cz:|:smile_da:|:smile_db:|:smile_dc:|:smile_dd:|:smile_de:|:smile_df:|:smile_dg:|:smile_dh:|:smile_di:|:smile_dj:|:smile_dk:|:smile_dl:|:smile_dm:|:smile_dn:|:smile_do:|:smile_dp:|:smile_dr:|:smile_ds:|:smile_dt:|:smile_du:|:smile_dv:|:smile_gamer:|:smile_preved:|:smile_wacko:|:smile_you:|:smile_mail:|:smile_blyaa:|:smile_yazik:|:smile_ft:|:smile_rd:)#i';
    $postText = preg_replace($smiles_text, '<E>$1</E>', $postText);
    if (preg_match($smiles_text, $postText) == 1) $postText = preg_replace('#<t>(.*)<\/t>#is', '<r>$1</r>', $postText);
-   return $postText; 
+   return $postText;
 }
 
 // ---------------------------------------------------------------------------
@@ -349,12 +350,12 @@ function consoleOut($consoleText, $timeStamp=true) {
    $startStr = "\n";
 
    if ($timeStamp) {
-      
+
       $startStr .= $time_stamp.": ";
 
    }
    $endStr = "";
-   
+
    echo $startStr.$consoleText.$endStr;
 
 }
@@ -373,7 +374,7 @@ function getFlarumUserId($db, $prefix, $username) {
    $resUser = $db->query($query);
 
    if ($resUser === false) {
-         
+
       $userid = 0;
 
    } else {
@@ -396,16 +397,6 @@ function getFlarumUserId($db, $prefix, $username) {
 
 }
 
-function limitUse () {
-   global $threads_limit;
-   if ($threads_limit < 1) {
-
-      return false;
-   }
-   $threads_limit--;
-   return true;
-}
-
 function saveBLOB($filepath, $filename, $content)
 {
   $File = $filepath.$filename;
@@ -417,5 +408,28 @@ function saveBLOB($filepath, $filename, $content)
     fclose($Handle);
   }
   return false;
+}
+
+function limitUse () {
+   global $threads_limit;
+   if ($threads_limit < 1) {
+
+      return false;
+   }
+   $threads_limit--;
+   return true;
+}
+
+function interactive () {
+    echo "\nContinue? Type y/n: ";
+    $handle = fopen ("php://stdin","r");
+    $line = fgets($handle);
+    if(trim($line) != 'y'){
+        echo "ABORTING!\n";
+        exit;
+    }
+    fclose($handle);
+    echo "\n";
+    echo "Continuing...\n";
 }
 ?>
