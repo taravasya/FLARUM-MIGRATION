@@ -5,29 +5,7 @@
 //
 include_once 'config.php';
 include_once 'functions.php';
-
-$vbulletinDbConnection = new mysqli($servername, $username, $password, $vbulletinDbName);
-
-if ($vbulletinDbConnection->connect_error) {
-
-   consoleOut("Connection to vBulletin database failed: ".$vbulletinDbConnection->connect_error."\n");
-   die("Script stopped");
-
-} else {
-
-    consoleOut("Connection to vBulletin database successful"."\n");
-    if(!$vbulletinDbConnection->set_charset("utf8")) {
-
-       consoleOut("Error loading character set utf8: ".$vbulletinDbConnection->error."\n");
-      exit();
-       
-    } else {
-
-      consoleOut("Current character set: ".$vbulletinDbConnection->character_set_name()."\n");
-
-   }
-
-}
+include_once 'database.php';
 
 $result = $vbulletinDbConnection->query("SELECT `userid`, `filename`, `filedata`  FROM `customavatar` ORDER BY `userid` ASC;");
 

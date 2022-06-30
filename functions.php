@@ -221,7 +221,8 @@ function formatText($connection, $text, $discussionid, $postnumber, $postid) {
 }
 
 function removeUnwantedBcodes ($text) {
-   $UnwantedBcodes = array('[LEFT]', '[/LEFT]', '[RIGHT]', '[/RIGHT]', '[INDENT]', '[/INDENT]', '[HIGHLIGHT]', '[/HIGHLIGHT]', '[FONT]', '[/FONT]');
+   $UnwantedBcodes = array('[LEFT]', '[/LEFT]', '[RIGHT]', '[/RIGHT]', '[INDENT]', '[/INDENT]', '[HIGHLIGHT]', '[/HIGHLIGHT]', '[/FONT]');
+   $UnwantedBcodes = preg_replace('#\[FONT=.+]#iU', '', $UnwantedBcodes);
    return str_ireplace($UnwantedBcodes, '', $text);
 }
 
@@ -235,12 +236,12 @@ function removeUnwantedBcodes ($text) {
 function textFormatterParse($text) {
    global $parser;
    //Adapte for s9etextformatter
-   $text = preg_replace('#\[VIDEO=(.*?)]((.)*?)\[\/VIDEO]#is', '[MEDIA]$2[/MEDIA]', $text);
+   $text = preg_replace('#\[VIDEO=(.*?)]((.)*?)\[\/VIDEO]#is', '$2', $text);
    $text = preg_replace('#\[ADDSHARE](.+)src="((https?:)?(.*?))"(.+)\[\/ADDSHARE]#is', 'https:$4', $text);
    $text = preg_replace_callback(
        '#\[size=(\d)[^]]*](((?R)|.).*?)\[\/size]#si',
        function($m) {
-           $trans = array(1 => 6, 2 => 6, 3 => 5, 5 => 3, 6 => 2, 7 => 1);
+           $trans = array(1 => 6, 2 => 5, 3 => 5, 5 => 3, 6 => 2, 7 => 1);
            $m[1] = strtr($m[1], $trans);
            return '[H'.$m[1].']'.$m[2].'[/H'.$m[1].']';
        },

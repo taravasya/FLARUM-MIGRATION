@@ -5,7 +5,7 @@
  *
  * @author George Lewe <george@lewe.com>
  * @since 1.0.0
- * 
+ *
  * Modified by: taravasya
  * Modified by:
  */
@@ -28,72 +28,10 @@ $parser = FlarumBundle::getParser();
 $step = -1;
 consoleOut("\n===============================================================================",false);
 consoleOut("vBulletin to Flarum Migration Script                                     v".$script_version,false);
-
-
-//-----------------------------------------------------------------------------
-//
-// Establish connection to the vBulletin database
-//
 $step++;
+include_once 'database.php';
 consoleOut("\n-------------------------------------------------------------------------------",false);
 consoleOut("STEP ".$step.": ".strtoupper($steps[$step]['title'])."\n",false);
-
-$vbulletinDbConnection = new mysqli($servername, $username, $password, $vbulletinDbName);
-
-if ($vbulletinDbConnection->connect_error) {
-
-   consoleOut("Connection to vBulletin database failed: ".$vbulletinDbConnection->connect_error);
-   die("Script stopped");
-
-} else {
-
-    consoleOut("Connection to vBulletin database successful");
-    if(!$vbulletinDbConnection->set_charset("utf8")) {
-
-       consoleOut("Error loading character set utf8: ".$vbulletinDbConnection->error);
-      exit();
-       
-    } else {
-
-      consoleOut("Current character set: ".$vbulletinDbConnection->character_set_name());
-
-   }
-
-}
-
-//-----------------------------------------------------------------------------
-//
-// Establish connection to the Flarum database
-//
-$flarumDbConnection = new mysqli($servername, $username, $password, $flarumDbName);
-
-if ($flarumDbConnection->connect_error) {
-
-   consoleOut("Connection to Flarum database failed: ".$flarumDbConnection->connect_error);
-   die("Script stopped");
-   
-} else {
-
-    consoleOut("Connection to Flarum database successful");
-    if(!$flarumDbConnection->set_charset("utf8")) {
-
-      consoleOut("Error loading character set utf8: ".$flarumDbConnection->error);
-      exit();
-       
-    } else {
-
-      consoleOut("Current character set: ".$flarumDbConnection->character_set_name());
-
-   }
-
-}
-
-//-----------------------------------------------------------------------------
-//
-// Disable foreing keys check
-//
-$flarumDbConnection->query("SET FOREIGN_KEY_CHECKS=0");
-consoleOut("Foreign key checks disabled in Flarum database");
 
 //-----------------------------------------------------------------------------
 //
@@ -107,7 +45,7 @@ if ($steps[$step]['enabled']) {
 
    $result = $vbulletinDbConnection->query("SELECT usergroupid, title, usertitle FROM ${vbulletinDbPrefix}usergroup");
    $totalGroups = $result->num_rows;
-   
+
    if ($totalGroups) {
 
       consoleOut("Migrating ".$totalGroups." groups:");
@@ -145,9 +83,9 @@ if ($steps[$step]['enabled']) {
             $color = rand_color();
             $query = "INSERT INTO ".$flarumDbPrefix."groups (id, name_singular, name_plural, color) VALUES ( '$id', '$name_singular', '$name_plural', '$color')";
             $res = $flarumDbConnection->query($query);
-            
+
             if ($res === false) {
-               
+
                consoleOut("SQL error");
                consoleOut($query,false);
                consoleOut($flarumDbConnection->error."\n",false);
@@ -159,21 +97,21 @@ if ($steps[$step]['enabled']) {
             }
 
          }
-         
+
       }
-      
+
       consoleOut("Done");
-      
+
    } else {
 
       consoleOut("No vBulletin groups found");
-      
+
    }
-      
+
 } else {
 
    consoleOut("Step disabled in script");
-   
+
 }
 
 //-----------------------------------------------------------------------------
@@ -188,7 +126,7 @@ if ($steps[$step]['enabled']) {
 
    $result = $vbulletinDbConnection->query("SELECT userid, usergroupid, membergroupids, from_unixtime(joindate) as user_joindate, from_unixtime(lastvisit) as user_lastvisit, username, password, salt, email, birthday_search FROM ${vbulletinDbPrefix}user");
    $totalUsers = $result->num_rows;
-   
+
    if ($totalUsers) {
 
       consoleOut("Migrating ".$totalUsers." users:");
@@ -212,7 +150,7 @@ if ($steps[$step]['enabled']) {
             $birthday = $row['birthday_search'];
             if ($_useCustomPlugins) {
                if ($birthday != '0000-00-00') {
-                  $query = "INSERT INTO ".$flarumDbPrefix."users (id, username, email, password, joined_at, last_seen_at, is_email_confirmed, migratetoflarum_old_password, birthday, showDobDate, showDobYear) VALUES ('$id', '$username', '$email', '$password', '$joined_at', '$last_seen_at', 1, '$oldpassword', '$birthday', 1, 1)";                   
+                  $query = "INSERT INTO ".$flarumDbPrefix."users (id, username, email, password, joined_at, last_seen_at, is_email_confirmed, migratetoflarum_old_password, birthday, showDobDate, showDobYear) VALUES ('$id', '$username', '$email', '$password', '$joined_at', '$last_seen_at', 1, '$oldpassword', '$birthday', 1, 1)";
                } else {
                   $query = "INSERT INTO ".$flarumDbPrefix."users (id, username, email, password, joined_at, last_seen_at, is_email_confirmed, migratetoflarum_old_password,  showDobDate, showDobYear) VALUES ('$id', '$username', '$email', '$password', '$joined_at', '$last_seen_at', 1, '$oldpassword', 1, 1)";
                }
@@ -221,7 +159,7 @@ if ($steps[$step]['enabled']) {
             }
             $res = $flarumDbConnection->query($query);
             if ($res === false) {
-               
+
                consoleOut("SQL error");
                consoleOut($query,false);
                consoleOut($flarumDbConnection->error."\n",false);
@@ -249,7 +187,7 @@ if ($steps[$step]['enabled']) {
                         $query = "INSERT INTO ".$flarumDbPrefix."group_user (user_id, group_id) VALUES ( '$id', '2')";
                         $res = $flarumDbConnection->query($query);
                         break;
-            
+
                      // | VBULLETIN                              |  FLARUM      |
                      // | 2 = Registered users                   |  3 = Members |
                      case 2:
@@ -273,7 +211,7 @@ if ($steps[$step]['enabled']) {
                         $query = "INSERT INTO ".$flarumDbPrefix."group_user (user_id, group_id) VALUES ( '$id', '1')";
                         $res = $flarumDbConnection->query($query);
                         break;
-      
+
                      default:
                         $query = "INSERT INTO ".$flarumDbPrefix."group_user (user_id, group_id) VALUES ( '$id', '".$usergroupid."')";
                         $res = $flarumDbConnection->query($query);
@@ -285,27 +223,27 @@ if ($steps[$step]['enabled']) {
                echo(".");
 
             }
-            
+
          } else {
 
             $usersIgnored++;
-            
+
          }
-         
+
       }
-      
+
       consoleOut($i-$usersIgnored." out of ".$totalUsers." total users migrated");
-      
+
    } else {
 
       consoleOut("No vBulletin users found");
-      
+
    }
-      
+
 } else {
 
    consoleOut("Step disabled in script");
-   
+
 }
 
 //-----------------------------------------------------------------------------
@@ -320,7 +258,7 @@ if ($steps[$step]['enabled']) {
 
    $result = $vbulletinDbConnection->query("SELECT forumid, title_clean, description_clean, from_unixtime(lastpost) as forum_lastpost, lastposter, threadcount, parentid FROM ${vbulletinDbPrefix}forum");
    $totalCategories = $result->num_rows;
-   
+
    if ($totalCategories) {
 
       consoleOut("Migrating ".$totalCategories." categories:");
@@ -339,7 +277,7 @@ if ($steps[$step]['enabled']) {
 
          $query = "INSERT INTO ".$flarumDbPrefix."tags (id, name, description, slug, color, position, parent_id, last_posted_at, last_posted_user_id, discussion_count) VALUES ( '$id', '$name', '$description', '$slug', '$color', '$position', $parent_id, '$last_posted_at', ".$last_posted_user_id.", ".$discussion_count.");";
          $res = $flarumDbConnection->query($query);
-         
+
          if($res === false) {
 
             consoleOut("Tag ID ".$id." might already exist. Trying to update record...");
@@ -347,9 +285,9 @@ if ($steps[$step]['enabled']) {
             $slug = mysql_escape_mimic(slugify($name));
             $queryupdate = "UPDATE ".$flarumDbPrefix."tags SET name = '$name', description = '$description', slug = '$slug', last_posted_at = '$last_posted_at', last_posted_user_id = $last_posted_user_id, discussion_count = $discussion_count WHERE id = '$id' ;";
             $res = $flarumDbConnection->query($queryupdate);
-            
+
             if ($res === false) {
-               
+
                consoleOut("SQL error");
                consoleOut($query,false);
                consoleOut($flarumDbConnection->error."\n",false);
@@ -359,25 +297,25 @@ if ($steps[$step]['enabled']) {
                echo(".");
 
             }
-         
+
          }
-         
+
          $i++;
-         
+
       }
-      
+
       consoleOut($totalCategories." forums migrated.");
-      
+
    } else {
 
       consoleOut("No vBulletin forums found");
-      
+
    }
-   
+
 } else {
 
    consoleOut("Step disabled in script");
-   
+
 }
 
 //-----------------------------------------------------------------------------
@@ -441,7 +379,7 @@ if ($steps[$step]['enabled']) {
                consoleOut("\n#######################################################################################################",false);
                consoleOut("Migrating ".$postCount." posts for thread ID ".$thread["threadid"]." (".$curThreadCount." of ".$threadCount."):");
                $curPost = 0;
-               
+
                //
                // Loop through all posts of the current thread
                //
@@ -461,7 +399,7 @@ if ($steps[$step]['enabled']) {
 
                      // It's the last post in the discussion. Save the last poster id.
                      $lastPosterID = $posterID;
-                     
+
                   }
 
                   $query = "INSERT INTO ".$flarumDbPrefix."posts (
@@ -484,23 +422,23 @@ if ($steps[$step]['enabled']) {
                   );";
 
                   $res = $flarumDbConnection->query($query);
-                  
+
                   if ($res === false) {
 
                      consoleOut("SQL error");
                      consoleOut($query,false);
                      consoleOut($flarumDbConnection->error."\n",false);
-                     
+
                   } else {
 
                      echo(".");
 
-                  }                            
-               }                                 
+                  }
+               }
             } else {
 
                consoleOut("Thread ".$thread['threadid']." has zero posts.");
-               
+
             }
 
             //
@@ -518,13 +456,13 @@ if ($steps[$step]['enabled']) {
 
             $query = "INSERT INTO ".$flarumDbPrefix."discussion_tag (discussion_id, tag_id) VALUES( '$threadid', '$forumid')";
             $res = $flarumDbConnection->query($query);
-            
+
             if ($res === false) {
 
                consoleOut("SQL error");
                consoleOut($query,false);
                consoleOut($flarumDbConnection->error."\n",false);
-               
+
             }
 
             //
@@ -532,26 +470,26 @@ if ($steps[$step]['enabled']) {
             //
             $parentForum = $vbulletinDbConnection->query("SELECT parentid FROM ${vbulletinDbPrefix}forum WHERE forumid = ".$thread["forumid"]);
             $result = $parentForum->fetch_assoc();
-            
+
             if ($result['parentid'] > 0) {
 
                $threadid = $thread["threadid"];
                $parentid = $result['parentid'];
                $query = "INSERT INTO ".$flarumDbPrefix."discussion_tag (discussion_id, tag_id) VALUES( '$threadid', '$parentid')";
                $res = $flarumDbConnection->query($query);
-               
+
                if($res === false) {
 
                   consoleOut("SQL error");
                   consoleOut($query,false);
                   consoleOut($flarumDbConnection->error."\n",false);
-                  
+
                }
-               
+
             }
-            
+
             if ($lastPosterID == 0) {
-               
+
                //
                // Just to make sure it displays an actual username if the topic doesn't have posts? Not sure about this.
                // Try to find the last poster's ID in Flarum (requires vBulletin users already imported)
@@ -590,13 +528,13 @@ if ($steps[$step]['enabled']) {
             )";
 
             $res = $flarumDbConnection->query($query);
-            
+
             if ($res === false) {
 
                consoleOut("SQL error");
                consoleOut($query,false);
                consoleOut($flarumDbConnection->error."\n",false);
-               
+
             }
          }
       }
@@ -610,9 +548,9 @@ if ($steps[$step]['enabled']) {
       if ($res === false) {
          consoleOut("SQL error");
          consoleOut($query,false);
-         consoleOut($flarumDbConnection->error."\n",false);                  
-      } 
-      
+         consoleOut($flarumDbConnection->error."\n",false);
+      }
+
       $query = "INSERT IGNORE INTO ".$flarumDbPrefix."post_mentions_user (post_id, mentions_user_id) VALUES ";
       foreach($mentionsArray as $data) {
          $query .= " ('".implode("', '", $data)."'),";
@@ -622,21 +560,21 @@ if ($steps[$step]['enabled']) {
       if ($res === false) {
          consoleOut("SQL error");
          consoleOut($query,false);
-         consoleOut($flarumDbConnection->error."\n",false);                  
+         consoleOut($flarumDbConnection->error."\n",false);
       }
 
       consoleOut("Done");
-      
+
    } else {
 
       consoleOut("No threads");
-      
+
    }
-   
+
 } else {
 
    consoleOut("Step disabled in script");
-   
+
 }
 
 
@@ -658,14 +596,14 @@ if ($steps[$step]['enabled']) {
       if ($res === false) {
          consoleOut("SQL error");
          consoleOut($query,false);
-         consoleOut($flarumDbConnection->error."\n",false);                  
+         consoleOut($flarumDbConnection->error."\n",false);
       }
    }
-consoleOut("Done");   
+consoleOut("Done");
 } else {
 
    consoleOut("Step disabled in script");
-   
+
 }
 
 
@@ -695,13 +633,13 @@ if ($steps[$step]['enabled']) {
          $threadID = $thread["threadid"];
          $query = "INSERT INTO ".$flarumDbPrefix."discussion_user (user_id, discussion_id) VALUES ( $userID, $threadID)";
          $res = $flarumDbConnection->query($query);
-         
+
          if($res === false) {
 
             consoleOut("SQL error");
             consoleOut($query,false);
             consoleOut($flarumDbConnection->error."\n",false);
-            
+
          } else {
 
             echo(".");
@@ -709,19 +647,19 @@ if ($steps[$step]['enabled']) {
          }
 
       }
-      
+
       consoleOut("Done");
-      
+
    } else {
 
       consoleOut("No vBulletin threads found");
-      
+
    }
 
 } else {
 
    consoleOut("Step disabled in script");
-   
+
 }
 
 
@@ -742,7 +680,7 @@ if ($steps[$step]['enabled']) {
       $total = $result->num_rows;
       consoleOut("Updating ".$total." user records:");
       $i = 1;
-      
+
       while ($row = $result->fetch_assoc()) {
 
          $userID = $row["id"];
@@ -757,7 +695,7 @@ if ($steps[$step]['enabled']) {
             consoleOut("SQL error");
             consoleOut($query,false);
             consoleOut($flarumDbConnection->error."\n",false);
-            
+
          } else {
 
             $query = "UPDATE ".$flarumDbPrefix."users SET discussion_count = '$numTopics',  comment_count = '$numPosts' WHERE id = '$userID' ";
@@ -768,29 +706,29 @@ if ($steps[$step]['enabled']) {
                consoleOut("SQL error");
                consoleOut($query,false);
                consoleOut($flarumDbConnection->error."\n",false);
-               
+
             } else {
-   
+
                echo(".");
-   
+
             }
-   
+
          }
-   
+
       }
-      
+
       consoleOut("Done");
 
    } else {
 
       consoleOut("Flarum user table is empty");
-      
+
    }
 
 } else {
 
    consoleOut("Step disabled in script");
-   
+
 }
 
 //-----------------------------------------------------------------------------
@@ -809,7 +747,7 @@ if ($steps[$step]['enabled']) {
 
       consoleOut("Updating ".$result->num_rows." tag records:");
       $position = 0;
-      
+
       while ($row = $result->fetch_assoc()) {
 
          $query = "UPDATE ".$flarumDbPrefix."tags SET position = $position WHERE id = ".$row['id'].";";
@@ -820,7 +758,7 @@ if ($steps[$step]['enabled']) {
             consoleOut("SQL error");
             consoleOut($query,false);
             consoleOut($flarumDbConnection->error."\n",false);
-            
+
          } else {
 
             echo(".");
@@ -832,17 +770,17 @@ if ($steps[$step]['enabled']) {
       }
 
       consoleOut("Done");
-      
+
    } else {
 
       consoleOut("No Flarum tags found");
-      
+
    }
-   
+
 } else {
 
    consoleOut("Step disabled in script");
-   
+
 }
 
 //-----------------------------------------------------------------------------
