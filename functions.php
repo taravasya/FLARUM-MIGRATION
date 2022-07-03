@@ -151,13 +151,14 @@ function mysql_escape_mimic($inp) {
  * @return string    Converted text
  */
 function formatText($connection, $text, $discussionid, $postnumber, $postid) {
+    $debugPosts = array(4754, 4917, 67070);
    global $mentionsArray;
    global $quotesArray;
    global $postsNumbersArray;
    global $_convertCustomBBCodesToXML;
    global $_convertCustomSmiliesToXML;
    global $_convertInternalURLs;
-   global $_removeUnwantedBcodes;
+   global $_removeUnwantedBBcodes;
 
    $text = html_entity_decode($text);
    if ($_convertInternalURLs) {
@@ -204,25 +205,22 @@ function formatText($connection, $text, $discussionid, $postnumber, $postid) {
 	   $text = preg_replace('#https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)#i', $GLOBALS['is_thread'].' №$2', $text);
 
    }
+
    //clear whitespaces what placed next to square brackets between tags: [code] <<<MY TEXT[/code] (due to a typo or negligence).
    $text = preg_replace('#(\[\S+])([[:blank:]]+?)(.+)([[:blank:]]+)?(\[\/\S+])#U', ' $1$3$5 ', $text);
 
-   //remove bbcode tags that will be ignored with flarum or, just dont needed
-   if ($_removeUnwantedBcodes) $text = removeUnwantedBcodes($text);
-
-   $text = textFormatterParse($text);
-
+   //remove bbcode tags that will be ignored with flarum or if they just dont need
+   if ($_removeUnwantedBBcodes) $text = removeUnwantedBBcodes($text);
+   $text = s9eTextFormatterParse($text);
    if ($_convertCustomBBCodesToXML) $text = convertCustomBBCodesToXML($text, $discussionid, $postnumber, $postid);
-
    if ($_convertCustomSmiliesToXML) $text = convertCustomSmiliesToXML($text);
-
    return $connection->real_escape_string($text);
 
 }
 
-function removeUnwantedBcodes ($text) {
+function removeUnwantedBBcodes ($text) {
    $UnwantedBcodes = array('[LEFT]', '[/LEFT]', '[RIGHT]', '[/RIGHT]', '[INDENT]', '[/INDENT]', '[HIGHLIGHT]', '[/HIGHLIGHT]', '[/FONT]');
-   $UnwantedBcodes = preg_replace('#\[FONT=.+]#iU', '', $UnwantedBcodes);
+   $text = preg_replace('#\[FONT=.+]#iU', '', $text);
    return str_ireplace($UnwantedBcodes, '', $text);
 }
 
@@ -233,7 +231,7 @@ function removeUnwantedBcodes ($text) {
  * @param  string    $bbcode  Source text from posts
  * @return string    Converted $bbcode
  */
-function textFormatterParse($text) {
+function s9eTextFormatterParse($text) {
    global $parser;
    //Adapte for s9etextformatter
    $text = preg_replace('#\[VIDEO=(.*?)]((.)*?)\[\/VIDEO]#is', '$2', $text);
@@ -291,7 +289,8 @@ function convertCustomBBCodesToXML($bbcode, $discussionid, $postnumber, $postid)
    );
    $bbcode = preg_replace('#\[SPOILER](.*?)\[\/SPOILER]#is', '<DETAILS title="⏵ Подробнее"><s>[details="Подробнее"]</s><p>$1</p><e>[/details]</e></DETAILS>', $bbcode);
    $bbcode = preg_replace('#\[SPOILER=(.*?)](.*?)\[\/SPOILER]#is', '<DETAILS title="⏵ $1"><s>[details="$1"]</s><p>$2</p><e>[/details]</e></DETAILS>', $bbcode);
-   $bbcode = preg_replace('#\[(HIDE(.*?)|SHOWTOGROUPS(.*?))]((.)*?)\[(\/HIDE(.*?)|\/SHOWTOGROUPS(.*?))]#is', '<p>[LOGIN]$4[/LOGIN]</p>', $bbcode);
+
+   $bbcode = preg_replace('#\[(HIDE(.*?)|SHOWTOGROUPS)](.*)?\[(\/HIDE(.*?)|\/SHOWTOGROUPS)]#is', '<p>[LOGIN]$3[/LOGIN]</p>', $bbcode);
    $bbcode = preg_replace_callback(
       '#\[MENTION=(\d+)](.+?)\[\/MENTION]#is',
       function($m) use (&$mentionsArray, $postid) {
@@ -315,8 +314,9 @@ function convertCustomBBCodesToXML($bbcode, $discussionid, $postnumber, $postid)
           $bbcode
        );
    }
+
    $bbcode = preg_replace('#\[QUOTE="?([^;]+)"?](.*)\[\/QUOTE]#isU', '<QUOTE><i>&gt; </i>@$1</br><p>$2</p></QUOTE>', $bbcode);
-   $bbcode = preg_replace('#\[QUOTE]((.)*?)\[\/QUOTE]#is', '<QUOTE><i>&gt; </i><p>$1</p></QUOTE>', $bbcode);
+   $bbcode = preg_replace('#\[QUOTE](.*)?\[\/QUOTE]#is', '<QUOTE><i>&gt; </i><p>$1</p></QUOTE>', $bbcode);
    // Posts with this bbcodes need to be 'richtext' too
    if (preg_match('#<QUOTE|<USERMENTION|<DETAILS|<UPL-IMAGE-PREVIEW#i', $bbcode) == 1) $bbcode = preg_replace('#<t>(.*)<\/t>#is', '<r>$1</r>', $bbcode);
    return $bbcode;
@@ -345,20 +345,16 @@ function convertCustomSmiliesToXML($postText) {
  * @param  string    $consoleText    Text to put out
  * @param  bool      $timeStamp      Whether ot not to show a timestamp
  */
-function consoleOut($consoleText, $timeStamp=true) {
-
+function consoleOut($consoleText, $timeStamp=true, $putInDebug=false) {
    $time_stamp = Date('Y-m-d H:i:s');
    $startStr = "\n";
 
    if ($timeStamp) {
-
       $startStr .= $time_stamp.": ";
-
    }
    $endStr = "";
-
    echo $startStr.$consoleText.$endStr;
-
+   if ($putInDebug) file_put_contents('debug.log', print_r($startStr.$consoleText.$endStr, true), FILE_APPEND);
 }
 
 // ---------------------------------------------------------------------------
@@ -398,6 +394,19 @@ function getFlarumUserId($db, $prefix, $username) {
 
 }
 
+function insertupdateSQL ($connection, $query, $withdot = false) {
+    $res = $connection->query($query);
+    if ($res === false) {
+       consoleOut("SQL error");
+       consoleOut($query,false);
+       consoleOut($connection->error."\n",false,true);
+       return false;
+    } else {
+       if ($withdot) echo(".");
+       return true;
+    }
+}
+
 function saveBLOB($filepath, $filename, $content)
 {
   $File = $filepath.$filename;
@@ -414,7 +423,6 @@ function saveBLOB($filepath, $filename, $content)
 function limitUse () {
    global $threads_limit;
    if ($threads_limit < 1) {
-
       return false;
    }
    $threads_limit--;
@@ -432,5 +440,10 @@ function interactive () {
     fclose($handle);
     echo "\n";
     echo "Continuing...\n";
+}
+
+function debugPosts ($postid, $mark, $text) {
+    global $_debugPosts;
+    if (in_array($postid, $_debugPosts)) file_put_contents('debugPosts.log', print_r("\n\n".' ################ '.$postid.'# '.$mark.' # '."\n\n".$text, true), FILE_APPEND);
 }
 ?>
