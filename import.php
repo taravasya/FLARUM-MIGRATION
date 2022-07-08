@@ -23,6 +23,7 @@ include_once 'functions.php';
 include __DIR__ . '/../../vendor/autoload.php';
 include_once 'flarumbundle.php'; //!!! here custom bundle for parsing vb posts content @taravasya
 $parser = FlarumBundle::getParser();
+$bbcode_tag ='';
 
 
 $step = -1;
@@ -227,7 +228,7 @@ if ($steps[$step]['enabled']) {
 
             if($res === false || $res == false) {
                 consoleOut("Tag ID ".$id." might already exist. Trying to update record...",true,true);
-                $slug = mysql_escape_mimic(slugify($row["title_clean"])).'1';
+                $slug = mysql_escape_mimic(slugify($row["title_clean"])).$i;
                 $queryupdate = "INSERT INTO ".$flarumDbPrefix."tags (id, name, description, slug, color, position, parent_id, last_posted_at, last_posted_user_id, discussion_count) VALUES ( '$id', '$name', '$description', '$slug', '$color', '$position', $parent_id, '$last_posted_at', ".$last_posted_user_id.", ".$discussion_count.");";
                 $res = insertupdateSQL($flarumDbConnection, $queryupdate, true);
             }
@@ -320,7 +321,7 @@ if ($steps[$step]['enabled']) {
                             $lastPosterID = $posterID;
                         }
                         $insertSQL.= "('".$post['postid']."','".$thread['threadid']."','".$curPost."','".$postDate."','".$posterID."','comment','".$postText."'),";
-                        if (strlen($insertSQL) * 8 > 1024000) {
+                        if (strlen($insertSQL) * 8 > 2048000) {
                             $insertSQL = substr($insertSQL, 0, -1);
                             $res = insertupdateSQL($flarumDbConnection, $insertSQL, true);
                             $insertSQL = "INSERT INTO ".$flarumDbPrefix."posts (id, discussion_id, number, created_at, user_id, type, content) VALUES";
@@ -411,7 +412,7 @@ if ($steps[$step]['enabled']) {
 
                 $res = insertupdateSQL($flarumDbConnection, $query);
             }
-            if (strlen($insertSQL) * 8 > 1024000) {
+            if (strlen($insertSQL) * 8 > 2048000) {
                 $insertSQL = substr($insertSQL, 0, -1);
                 $res = insertupdateSQL($flarumDbConnection, $insertSQL, true);
                 $insertSQL = "INSERT INTO ".$flarumDbPrefix."posts (id, discussion_id, number, created_at, user_id, type, content) VALUES";

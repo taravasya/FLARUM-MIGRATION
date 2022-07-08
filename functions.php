@@ -222,19 +222,45 @@ function removeUnwantedBBcodes ($text) {
 */
 function s9eTextFormatterParse($text) {
     global $parser;
+    global $bbcode_tag;
     //Adapte for s9etextformatter
-    $text = preg_replace('#\[VIDEO=(.*?)]((.)*?)\[\/VIDEO]#is', '$2', $text);
-    $text = preg_replace('#\[ADDSHARE](.+)src="((https?:)?(.*?))"(.+)\[\/ADDSHARE]#is', 'https:$4', $text);
+    $text = preg_replace('#(\[VIDEO(=.*)?])|(\[\/VIDEO])#Ui', '', $text);
+    $text = preg_replace('#\[ADDSHARE](.+)src="((https?:)?(.*?))"(.+)\[\/ADDSHARE]#i', 'https:$4', $text);
     $text = preg_replace_callback(
-        '#\[size=(\d)[^]]*](((?R)|.).*?)\[\/size]#si',
+        '#(\[MENTION=\d+])(.*)(\[\/MENTION])#Ui',
         function($m) {
-            $trans = array(1 => 6, 2 => 5, 3 => 5, 5 => 3, 6 => 2, 7 => 1);
-            $m[1] = strtr($m[1], $trans);
-            return '[H'.$m[1].']'.$m[2].'[/H'.$m[1].']';
+            return $m[1].preg_replace('#\[\w]|\[\/\w]#', '', $m[2]).$m[3];
         },
         $text
     );
-    $text = preg_replace('#\[H=(\d)[^]]*](((?R)|.).*?)\[\/H]#si', '[H$1]$2[/H$1]', $text);
+    $text = preg_replace_callback(
+        '#(\[size=(\d)])|(\[\/size])#Ui',
+        function($m) use (&$bbcode_tag) {
+            if ($m[1]) {
+                $trans = array(1 => 10, 2 => 12, 3 => 15, 4 => 20, 5 => 25, 6 => 30, 7 => 40);
+                $bbcode_tag = strtr($m[2], $trans);
+                return '[SIZE='.$bbcode_tag.']';
+            }
+            if (isset($m[3]) && $m[3]) {
+                return '[/SIZE]';
+            }
+        },
+        $text
+    );
+
+    $text = preg_replace_callback(
+        '#(\[H(\d)])|(\[\/H])#Ui',
+        function($m) use (&$bbcode_tag) {
+            if ($m[1]) {
+                $bbcode_tag = $m[2];
+                return $m[1];
+            }
+            if (isset($m[3]) && $m[3]) {
+                return '[/H'.$bbcode_tag.']';
+            }
+        },
+        $text
+    );
     $text = preg_replace('#\[noparse]#i', '[NOPARSE]', $text);
     $text = preg_replace('#\[\/noparse]#i', '[/NOPARSE]', $text);
     $text = preg_replace('#\[tt=#', '[ACRONYM=', $text);
@@ -270,40 +296,94 @@ function convertCustomBBCodesToXML($bbcode, $discussionid, $postnumber, $postid)
     $bbcode = preg_replace_callback(
         '#\[ATTACH(=CONFIG)?](\d{1,10})\[\/ATTACH]#',
         function ($m) use ($attachmentsArray) {
-            return isset($attachmentsArray[$m[2]]) ? '<UPL-IMAGE-PREVIEW url="'.$attachmentsArray[$m[2]]['path'].'">[upl-image-preview url='.$attachmentsArray[$m[2]]['path'].']</UPL-IMAGE-PREVIEW>' : 'Вложение №'.$m[2].' не найдено!';
+            return isset($attachmentsArray[$m[2]]) ? '<UPL-IMAGE-PREVIEW url="'.$attachmentsArray[$m[2]]['path'].'">[upl-image-preview url='.$attachmentsArray[$m[2]]['path'].']</UPL-IMAGE-PREVIEW>' : $GLOBALS['attachment'].' №'.$m[2].' '.$GLOBALS['notfound'];
         },
         $bbcode
     );
-    $bbcode = preg_replace('#\[SPOILER](.*?)\[\/SPOILER]#is', '<DETAILS title="⏵ Подробнее"><s>[details="Подробнее"]</s><p>$1</p><e>[/details]</e></DETAILS>', $bbcode);
-    $bbcode = preg_replace('#\[SPOILER=(.*?)](.*?)\[\/SPOILER]#is', '<DETAILS title="⏵ $1"><s>[details="$1"]</s><p>$2</p><e>[/details]</e></DETAILS>', $bbcode);
 
-    $bbcode = preg_replace('#\[(HIDE(.*?)|SHOWTOGROUPS)](.*)?\[(\/HIDE(.*?)|\/SHOWTOGROUPS)]#is', '<p>[LOGIN]$3[/LOGIN]</p>', $bbcode);
+
     $bbcode = preg_replace_callback(
-        '#\[MENTION=(\d+)](.+?)\[\/MENTION]#is',
+        '#(?>(\[SPOILER=?(.*)?])|(\[\/SPOILER]))#Ui',
+        function($m) {
+            if ($m[1]) {
+                if (isset($m[2]) && $m[2]) {
+                    $m[2] = str_replace(['=','"'], '', $m[2]);
+                    return '<DETAILS title="⏵ '.$m[2].'"><s>[details="'.$m[2].'"]</s><p>';
+                } else {
+                    return '<DETAILS title="⏵ Подробнее"><s>[details="Подробнее"]</s><p>';
+                }
+            }
+            if (isset($m[3])) {
+                return '</p><e>[/details]</e></DETAILS>'."\n";
+            }
+        },
+        $bbcode
+    );
+
+    $bbcode = preg_replace_callback(
+        '#(?>(\[HIDE(.*)?])|(\[\/HIDE(.*)?]))#Ui',
+        function($m) {
+            if (isset($m[3])) {
+                return '[/LOGIN]</p>';
+            }
+            if ($m[1]) {
+                return '<p>[LOGIN]';
+            }
+        },
+        $bbcode
+    );
+
+    $bbcode = preg_replace_callback(
+        '#(?>(\[SHOWTOGROUPS=.+])|(\[\/SHOWTOGROUPS]))#Ui',
+        function($m) {
+            if (isset($m[2])) {
+                return '[/LOGIN]</p>';
+            }
+            if ($m[1]) {
+                return '<p>[LOGIN]';
+            }
+        },
+        $bbcode
+    );
+
+    $bbcode = preg_replace_callback(
+        '#\[MENTION=(\d+)](.+)\[\/MENTION]#Ui',
         function($m) use (&$mentionsArray, $postid) {
-            $m[1] = isset($m[1]) ? $m[1] : '';
-            $m[2] = isset($m[2]) ? $m[2] : '';
             array_push($mentionsArray, [$postid, $m[1]]);
             return '<USERMENTION displayname="'.$m[2].'" id="'.$m[1].'">@'.$m[2].'</USERMENTION>';
         },
         $bbcode
     );
-        while (preg_match('#\[QUOTE="?(.+;\d+)"?](?s)(.+)\[\/QUOTE]#iU', $bbcode)) {
-            $bbcode = preg_replace_callback(
-                '#\[QUOTE="?(.+;\d+)"?](?s)(.+)\[\/QUOTE]#iU',
-                function($m) use (&$quotesArray, $discussionid, $postid, $postnumber, $postsNumbersArray) {
-                    list($name, $id) = explode(";", $m[1]);
-                    array_push($quotesArray, [$postid, $id]);
-                    $mentionet_postnumber = isset($postsNumbersArray[$id]) ? $postsNumbersArray[$id][0] : 1;
-                    $mentionet_discussion = isset($postsNumbersArray[$id]) ? $postsNumbersArray[$id][1] : $discussionid;
-                    return '<QUOTE><i>&gt; </i><p><POSTMENTION discussionid="'.$mentionet_discussion.'" displayname="'.$name.'" id="'.$id.'" number="'.$mentionet_postnumber.'">@"'.$name.'"#p'.$id.'</POSTMENTION> '.$m[2].' </p></QUOTE>';
-                },
-                $bbcode
-            );
-        }
 
-    $bbcode = preg_replace('#\[QUOTE="?([^;]+)"?](.*)\[\/QUOTE]#isU', '<QUOTE><i>&gt; </i>@$1</br><p>$2</p></QUOTE>', $bbcode);
-    $bbcode = preg_replace('#\[QUOTE](.*)?\[\/QUOTE]#is', '<QUOTE><i>&gt; </i><p>$1</p></QUOTE>', $bbcode);
+    $bbcode = preg_replace_callback (
+        '#(?>(\[QUOTE=?(.*)?])|(\[\/QUOTE]))#Ui',
+        function($m) use (&$quotesArray, $discussionid, $postid, $postnumber, $postsNumbersArray) {
+            if ($m[1]) {
+                if (isset($m[2]) && $m[2]) {
+                    if (strpos($m[2], ';') !== false) {
+                        $qdata = explode(';', str_replace(['=','"'], '', $m[2]));
+                        $qname = (isset($qdata[0]) && $qdata[0]) ? $qdata[0] : false;
+                        $qpostid = (isset($qdata[1]) && $qdata[1]) ? $qdata[1] : false;
+                        if (isset($postsNumbersArray[$qpostid][0]) && isset($postsNumbersArray[$qpostid][1]) && $qname && $qpostid) {
+                            array_push($quotesArray, [$postid, $qpostid]);
+                            return '<QUOTE><i>&gt; </i><p><POSTMENTION discussionid="'.$postsNumbersArray[$qpostid][1].'" displayname="'.$qname.'" id="'.$qpostid.'" number="'.$postsNumbersArray[$qpostid][0].'">@"'.$qname.'"#p'.$qpostid.'</POSTMENTION> ';
+                        }
+                        if ($qname && !$qpostid) return '<QUOTE><i>&gt; </i><p>@'.$qname.', '.$GLOBALS['is_wrote'].': ';
+                    } else {
+                        $qname = str_replace(['=','"'], '', $m[2]);
+                        return '<QUOTE><i>&gt; </i><p>@'.$qname.', '.$GLOBALS['is_wrote'].': ';
+                    }
+                } else {
+                    return '<QUOTE><i>&gt; </i><p>';
+                }
+            }
+            if (isset($m[3])) {
+                return '</p></QUOTE>'."\n";
+            }
+        },
+        $bbcode
+    );
+
     // Posts with this bbcodes need to be 'richtext' too
     if (preg_match('#<QUOTE|<USERMENTION|<DETAILS|<UPL-IMAGE-PREVIEW#i', $bbcode) == 1) $bbcode = preg_replace('#<t>(.*)<\/t>#is', '<r>$1</r>', $bbcode);
     return $bbcode;
@@ -317,12 +397,12 @@ function convertCustomBBCodesToXML($bbcode, $discussionid, $postnumber, $postid)
 * @return string    Converted text
 */
 function convertCustomSmiliesToXML($postText) {
-    $vb_smiles_text = [":'(", ':-*','O_o',' :[ ',':D','8*)',' :P ',';)',' :( ',' :) ','O:-)',':-X',':-|',':-\\','::)'];
+    $vb_smiles_text = [":'(", ':-*','O_o',':[',':D','8*)',':P',';)',':(',':)','O:-)',':-X',':-|',':-\\','::)'];
     $flarum_smiles_text = [' :Smile_Ak: ', ' :Smile_Aj: ',' :Smile_Ai: ',' :Smile_Ah: ',' :Smile_Ag: ',' :Smile_Af: ',' :Smile_Ae: ',' :Smile_Ad: ',' :Smile_Ac: ',' :Smile_Ab: ',' :Smile_Aa: ',' :Smile_Al: ',' :Smile_An: ',' :Smile_Ao: ', ' :Smile_Ap: '];
     $postText = str_replace($vb_smiles_text, $flarum_smiles_text, $postText);
     $smiles_text = '#(:Smile_Ak:|:Smile_Aj:|:Smile_Ai:|:Smile_Ah:|:Smile_Ag:|:Smile_Af:|:Smile_Ae:|:Smile_Ad:|:Smile_Ac:|:Smile_Ab:|:Smile_Aa:|:Smile_Al:|:smile_am:|:Smile_An:|:Smile_Ao:|:Smile_Ap:|:smile_aq:|:smile_ar:|:smile_as:|:smile_at:|:smile_au:|:smile_av:|:smile_aw:|:smile_ax:|:smile_ay:|:smile_az:|:smile_ba:|:smile_bb:|:smile_bc:|:smile_bd:|:smile_be:|:smile_bf:|:smile_bg:|:smile_bh:|:smile_bi:|:smile_bj:|:smile_bk:|:smile_bl:|:smile_bm:|:smile_bn:|:smile_bo:|:smile_bp:|:smile_bq:|:smile_br:|:smile_bs:|:smile_bt:|:smile_bu:|:smile_bv:|:smile_bw:|:smile_bx:|:smile_by:|:smile_bz:|:smile_ca:|:smile_cb:|:smile_cd:|:smile_ce:|:smile_cf:|:smile_cg:|:smile_ch:|:smile_ci:|:smile_cj:|:smile_ck:|:smile_cl:|:smile_cm:|:smile_cn:|:smile_co:|:smile_cp:|:smile_cq:|:smile_cr:|:smile_cs:|:smile_ct:|:smile_cu:|:smile_cv:|:smile_cw:|:smile_cx:|:smile_cy:|:smile_cz:|:smile_da:|:smile_db:|:smile_dc:|:smile_dd:|:smile_de:|:smile_df:|:smile_dg:|:smile_dh:|:smile_di:|:smile_dj:|:smile_dk:|:smile_dl:|:smile_dm:|:smile_dn:|:smile_do:|:smile_dp:|:smile_dr:|:smile_ds:|:smile_dt:|:smile_du:|:smile_dv:|:smile_gamer:|:smile_preved:|:smile_wacko:|:smile_you:|:smile_mail:|:smile_blyaa:|:smile_yazik:|:smile_ft:|:smile_rd:)#i';
     $postText = preg_replace($smiles_text, '<E>$1</E>', $postText);
-    if (preg_match($smiles_text, $postText) == 1) $postText = preg_replace('#<t>(.*)<\/t>#is', '<r>$1</r>', $postText);
+    if (preg_match($smiles_text, $postText)) $postText = preg_replace('#<t>(.*)<\/t>#is', '<r>$1</r>', $postText);
     return $postText;
 }
 
