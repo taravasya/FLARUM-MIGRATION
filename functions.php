@@ -141,7 +141,6 @@ function mysql_escape_mimic($inp) {
 * @return string    Converted text
 */
 function formatText($connection, $text, $discussionid, $postnumber, $postid) {
-    $debugPosts = array(4754, 4917, 67070);
     global $mentionsArray;
     global $quotesArray;
     global $postsNumbersArray;
@@ -157,7 +156,7 @@ function formatText($connection, $text, $discussionid, $postnumber, $postid) {
 
         //replace urls to posts between tags [url]URL[/url]
         $text = preg_replace_callback(
-            '#\[url](https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)(&page=\d+)?&p=(\d+).*post\d+)\[\/url]#Ui',
+            '#\[url](https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)(&page=\d+)?&p=(\d+).*post\d+)\[\/url]#i',
             function ($m) use ($postsNumbersArray) {
                 $postnumber = isset($postsNumbersArray[$m[5]]) ? $postsNumbersArray[$m[5]][0] : null;
                 return isset($postnumber) ? '[URL="/d/'.$m[3].'/'.$postnumber.'&pid'.$m[5].'"]Пост № '.$m[5].'[/URL]' : '[URL="/d/'.$m[3].'"]'.$GLOBALS['post_not_found'].'[/URL]';
@@ -165,10 +164,9 @@ function formatText($connection, $text, $discussionid, $postnumber, $postid) {
             $text
         );
 
-
         //replace urls to posts inside tags [url="URL"]
         $text = preg_replace_callback(
-            '#\[URL="?https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+?)(&page=\d+)?&p=(\d+?).*post\d+"?]#Ui',
+            '#\[URL="?https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+?)(&page=\d+)?&p=(\d+).*post\d+"?]#i',
             function ($m) use ($postsNumbersArray) {
                 $postnumber = isset($postsNumbersArray[$m[4]]) ? $postsNumbersArray[$m[4]][0] : null;
                 return isset($postnumber) ? '[URL="/d/'.$m[2].'/'.$postnumber.'&pid'.$m[4].'"]' : '[URL="/d/'.$m[2].'"]';
@@ -177,10 +175,10 @@ function formatText($connection, $text, $discussionid, $postnumber, $postid) {
         );
 
         //replace urls to threads between tags [url]URL[/url]
-        $text = preg_replace('#\[URL]https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+?)\[\/URL]#i', '[URL="/d/$2"]'.$GLOBALS['is_thread'].' №$2[/URL]', $text);
+        $text = preg_replace('#\[URL]https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)(&page=(\d+))?\[\/URL]#i', '[URL="/d/$2/${4}0"]'.$GLOBALS['is_thread'].' №$2[/URL]', $text);
 
         //replace urls to threads inside tag [url="URL"]
-        $text = preg_replace('#\[URL="?https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+?)"?]#i', '[URL="/d/$2"]', $text);
+        $text = preg_replace('#\[URL="?https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)(&page=(\d+))?"?]#i', '[URL="/d/$2/${4}0"]', $text);
 
         //replace text urls to posts between tags [url=url]URL[/url]
         $text = preg_replace_callback(
@@ -192,10 +190,9 @@ function formatText($connection, $text, $discussionid, $postnumber, $postid) {
         );
 
         //replace text urls to threads between tags [url=url]URL[/url]
-        $text = preg_replace('#https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)#i', $GLOBALS['is_thread'].' №$2', $text);
+        $text = preg_replace('#https?:\/\/(www.)?wedframe\.ru\/showthread\.php\?t=(\d+)(&page=(\d+))?#i', $GLOBALS['is_thread'].' №$2', $text);
 
     }
-
     //clear whitespaces what placed next to square brackets between tags: [code] <<<MY TEXT[/code] (due to a typo or negligence).
     $text = preg_replace('#(\[\S+])([[:blank:]]+?)(.+)([[:blank:]]+)?(\[\/\S+])#U', ' $1$3$5 ', $text);
 
@@ -204,11 +201,12 @@ function formatText($connection, $text, $discussionid, $postnumber, $postid) {
     $text = s9eTextFormatterParse($text);
     if ($_convertCustomBBCodesToXML) $text = convertCustomBBCodesToXML($text, $discussionid, $postnumber, $postid);
     if ($_convertCustomSmiliesToXML) $text = convertCustomSmiliesToXML($text);
+    debugPosts ($postid, 'formatText', $text);
     return $connection->real_escape_string($text);
 }
 
 function removeUnwantedBBcodes ($text) {
-    $UnwantedBcodes = array('[LEFT]', '[/LEFT]', '[RIGHT]', '[/RIGHT]', '[INDENT]', '[/INDENT]', '[HIGHLIGHT]', '[/HIGHLIGHT]', '[/FONT]');
+    $UnwantedBcodes = array('[LEFT]', '[/LEFT]', '[RIGHT]', '[/RIGHT]', '[INDENT]', '[/INDENT]', '[HIGHLIGHT]', '[/HIGHLIGHT]', '[/FONT]', '[IGM]', '[/IGM]');
     $text = preg_replace('#\[FONT=.+]#iU', '', $text);
     return str_ireplace($UnwantedBcodes, '', $text);
 }
@@ -222,10 +220,11 @@ function removeUnwantedBBcodes ($text) {
 */
 function s9eTextFormatterParse($text) {
     global $parser;
-    global $bbcode_tag;
+    $bbcode_tag_size = '';
+    $bbcode_tag_h = '';
     //Adapte for s9etextformatter
     $text = preg_replace('#(\[VIDEO(=.*)?])|(\[\/VIDEO])#Ui', '', $text);
-    $text = preg_replace('#\[ADDSHARE](.+)src="((https?:)?(.*?))"(.+)\[\/ADDSHARE]#i', 'https:$4', $text);
+    $text = preg_replace('#\[ADDSHARE(.*?)?](.+?)src="((https?:)?(.+?))"(.+?)\[\/ADDSHARE]#i', 'https:$5'."\n", $text);
     $text = preg_replace_callback(
         '#(\[MENTION=\d+])(.*)(\[\/MENTION])#Ui',
         function($m) {
@@ -235,11 +234,11 @@ function s9eTextFormatterParse($text) {
     );
     $text = preg_replace_callback(
         '#(\[size=(\d)])|(\[\/size])#Ui',
-        function($m) use (&$bbcode_tag) {
+        function($m) use (&$bbcode_tag_size) {
             if ($m[1]) {
                 $trans = array(1 => 10, 2 => 12, 3 => 15, 4 => 20, 5 => 25, 6 => 30, 7 => 40);
-                $bbcode_tag = strtr($m[2], $trans);
-                return '[SIZE='.$bbcode_tag.']';
+                $bbcode_tag_size = strtr($m[2], $trans);
+                return '[SIZE='.$bbcode_tag_size.']';
             }
             if (isset($m[3]) && $m[3]) {
                 return '[/SIZE]';
@@ -249,22 +248,22 @@ function s9eTextFormatterParse($text) {
     );
 
     $text = preg_replace_callback(
-        '#(\[H(\d)])|(\[\/H])#Ui',
-        function($m) use (&$bbcode_tag) {
+        '#(\[H=?(\d)])|(\[\/H])#Ui',
+        function($m) use (&$bbcode_tag_h) {
             if ($m[1]) {
-                $bbcode_tag = $m[2];
-                return $m[1];
+                $bbcode_tag_h = $m[2];
+                return '[H'.$bbcode_tag_h.']';
             }
             if (isset($m[3]) && $m[3]) {
-                return '[/H'.$bbcode_tag.']';
+                return '[/H'.$bbcode_tag_h.']';
             }
         },
         $text
     );
     $text = preg_replace('#\[noparse]#i', '[NOPARSE]', $text);
     $text = preg_replace('#\[\/noparse]#i', '[/NOPARSE]', $text);
-    $text = preg_replace('#\[tt=#', '[ACRONYM=', $text);
-    $text = preg_replace('#\[\/tt=]#i', '[/ACRONYM]', $text);
+    $text = preg_replace('#\[tt=#i', '[ACRONYM=', $text);
+    $text = preg_replace('#\[\/tt]#i', '[/ACRONYM]', $text);
     return $parser->parse($text);
 }
 
@@ -368,7 +367,8 @@ function convertCustomBBCodesToXML($bbcode, $discussionid, $postnumber, $postid)
                             array_push($quotesArray, [$postid, $qpostid]);
                             return '<QUOTE><i>&gt; </i><p><POSTMENTION discussionid="'.$postsNumbersArray[$qpostid][1].'" displayname="'.$qname.'" id="'.$qpostid.'" number="'.$postsNumbersArray[$qpostid][0].'">@"'.$qname.'"#p'.$qpostid.'</POSTMENTION> ';
                         }
-                        if ($qname && !$qpostid) return '<QUOTE><i>&gt; </i><p>@'.$qname.', '.$GLOBALS['is_wrote'].': ';
+                        if ($qname) return '<QUOTE><i>&gt; </i><p>@'.$qname.', '.$GLOBALS['is_wrote'].': ';
+                        return '<QUOTE><i>&gt; </i><p>';
                     } else {
                         $qname = str_replace(['=','"'], '', $m[2]);
                         return '<QUOTE><i>&gt; </i><p>@'.$qname.', '.$GLOBALS['is_wrote'].': ';
@@ -451,16 +451,18 @@ function getFlarumUserId($db, $prefix, $username) {
     return $userid;
 }
 
-function insertupdateSQL ($connection, $query, $withdot = false) {
-    $res = $connection->query($query);
-    if ($res === false) {
-        consoleOut("SQL error");
-        consoleOut($query,false);
-        consoleOut($connection->error."\n",false,true);
-        return false;
-    } else {
-        if ($withdot) echo(".");
-        return true;
+function insertupdateSQL ($connection, $query, $withdot = false, $debug_only = false) {
+    if (!$debug_only) {
+        $res = $connection->query($query);
+        if ($res === false) {
+            consoleOut("SQL error");
+            consoleOut($query,false);
+            consoleOut($connection->error."\n",false,true);
+            return false;
+        } else {
+            if ($withdot) echo(".");
+            return true;
+        }
     }
 }
 

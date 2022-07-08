@@ -25,7 +25,7 @@ $_removeUnwantedBBcodes = true;
 
 // Set limits for testing purposes
 $threads_limit  = 500000; // Limit the number of threads in migration results limit posts amount result, if and while you debugging migration process
-$threads_limit_ids = array(false, 1, 12, 5806); // Set to true first value and fill the list with ids of only those threads that will be included in the migration process. Other threads will be ignored.
+$threads_limit_ids = array(false, 1,2,3); // Set to true first value and fill the list with ids of only those threads that will be included in the migration process. Other threads will be ignored.
 $debugPosts = array(4754,4917,27711,34341,36838,38334,41679,42071,42313,43851,53357,63848,67070,74912,89041,89208); //Posts ids with content what will be write to debug.log file. Call function: postsDebug(postid, stage_to_distinguish,  post_content). Call this function inside functions: formatText, removeUnwantedBBcodes, s9eTextFormatterParse, convertCustomBBCodesToXML. By default this array not used anywhere. It will be use only if you add call for funtion postsDebug().
 //Translation for words used in formatText() for convert internal URLs
 $GLOBALS['post_not_found'] = '[!Пост не найден!]';
@@ -42,10 +42,10 @@ $GLOBALS['notfound'] = 'не найдено!';
 //
 $steps = array (
    array ( 'title' => 'Opening database connections',                'enabled' => true ),  // You cannot disable this step
-   array ( 'title' => 'Group migration',                             'enabled' => true ),
-   array ( 'title' => 'User migration',                              'enabled' => true ),
-   array ( 'title' => 'Forums => Tags migration',                    'enabled' => true ),
-   array ( 'title' => 'Threads/Posts => Discussion/Posts migration', 'enabled' => true ),
+   array ( 'title' => 'Group migration',                             'enabled' => false ),
+   array ( 'title' => 'User migration',                              'enabled' => false ),
+   array ( 'title' => 'Forums => Tags migration',                    'enabled' => false ),
+   array ( 'title' => 'Threads/Posts => Discussion/Posts migration', 'enabled' => false ),
    array ( 'title' => 'Avatars migration',                           'enabled' => true ),
    array ( 'title' => 'User/Discussions record creation',            'enabled' => true ),
    array ( 'title' => 'User discussion/comment count creation',      'enabled' => true ),

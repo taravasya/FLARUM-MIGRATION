@@ -23,7 +23,6 @@ include_once 'functions.php';
 include __DIR__ . '/../../vendor/autoload.php';
 include_once 'flarumbundle.php'; //!!! here custom bundle for parsing vb posts content @taravasya
 $parser = FlarumBundle::getParser();
-$bbcode_tag ='';
 
 
 $step = -1;
@@ -328,8 +327,6 @@ if ($steps[$step]['enabled']) {
                         }
                         echo(".");
                     }
-                    //$insertSQL = substr($insertSQL, 0, -1);
-                    //$res = insertupdateSQL($flarumDbConnection, $insertSQL, true);
                 } else {
                     consoleOut("Thread ".$thread['threadid']." has zero posts.",true,true);
                 }
@@ -699,9 +696,14 @@ if ($steps[$step]['enabled']) {
     if ($reprecords->num_rows) {
         consoleOut("Migrating ".$reprecords->num_rows." reputation records");
         $sqlInsert = "INSERT IGNORE INTO ".$flarumDbPrefix."post_likes (post_id, user_id, created_at) VALUES";
+        $i = 0;
         while ($row = $reprecords->fetch_assoc()) {
             $sqlInsert .= "('".$row['postid']."','".$row['whoadded']."','".$row['timestamp']."'),";
-            echo (".");
+            $i++;
+            if ($i == 100) {
+                $i = 0;
+                echo (".");
+            }
         }
         $sqlInsert = substr($sqlInsert, 0, -1);
         $res = insertupdateSQL($flarumDbConnection, $sqlInsert);
